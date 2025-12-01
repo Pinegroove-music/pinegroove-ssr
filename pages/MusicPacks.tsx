@@ -5,8 +5,13 @@ import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Disc, ArrowRight, AlertCircle, Tag } from 'lucide-react';
 
+// Extend Album interface locally to include track count
+interface AlbumWithCount extends Album {
+    track_count?: number;
+}
+
 export const MusicPacks: React.FC = () => {
-  const [albums, setAlbums] = useState<Album[]>([]);
+  const [albums, setAlbums] = useState<AlbumWithCount[]>([]);
   const { isDarkMode } = useStore();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -14,9 +19,10 @@ export const MusicPacks: React.FC = () => {
   useEffect(() => {
     const fetchAlbums = async () => {
       // Sorting by ID to be safe
+      // We also fetch the count of tracks using Supabase count feature on foreign key relation
       const { data, error } = await supabase
         .from('album')
-        .select('*')
+        .select('*, album_tracks(count)')
         .order('id', { ascending: false });
 
       if (error) {
@@ -25,7 +31,12 @@ export const MusicPacks: React.FC = () => {
       }
       
       if (data) {
-        setAlbums(data);
+        // Map the data to extract the count properly
+        const mappedData = data.map((item: any) => ({
+            ...item,
+            track_count: item.album_tracks?.[0]?.count || 0
+        }));
+        setAlbums(mappedData);
       }
       setLoading(false);
     };
@@ -59,8 +70,8 @@ export const MusicPacks: React.FC = () => {
             </p>
          </div>
       ) : (
-        /* Grid Layout: 1 col mobile, 2 tablet, 3 desktop, 4 large screens, 5 on ultra wide */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
+        /* Grid Layout: 1 col mobile, 2 tablet, 3 small desktop, 4 large screens */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {albums.map(album => (
                 <div 
                     key={album.id} 
@@ -79,7 +90,8 @@ export const MusicPacks: React.FC = () => {
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                         <div className="absolute top-3 left-3">
                             <span className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
-                                <Tag size={10} className="text-sky-400" /> Pack
+                                <Tag size={10} className="text-sky-400" /> 
+                                {album.track_count ? `${album.track_count} TRACKS` : 'ALBUM'}
                             </span>
                         </div>
                     </Link>

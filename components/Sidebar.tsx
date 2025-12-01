@@ -26,6 +26,19 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
     border-r flex flex-col pb-24
   `;
 
+  // Helper to render progressive text
+  const renderProgressiveText = (text: string, baseColor: string, startIndex: number) => {
+    return text.split('').map((char, index) => (
+      <span 
+        key={index}
+        className={`transition-colors duration-300 group-hover:text-sky-400 ${baseColor}`}
+        style={{ transitionDelay: `${(startIndex + index) * 35}ms` }}
+      >
+        {char}
+      </span>
+    ));
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -37,18 +50,20 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
       )}
 
       <aside className={sidebarClasses}>
-        <div className={`p-6 flex items-center ${collapsed ? 'justify-center' : 'justify-between'} relative`}>
+        {/* Header - Left Aligned to match nav items (pl-3) */}
+        <div className={`py-6 pl-3 pr-3 flex items-center relative h-20 ${collapsed ? 'justify-center pl-0 pr-0' : ''}`}>
           <Link to="/" className="flex items-center gap-1 group overflow-hidden">
-            {/* Custom Logo - Larger, No Background */}
+            {/* Custom Logo - Rotate on Hover */}
             <img 
                 src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/logo-pinegroove.svg?v=2" 
                 alt="Pinegroove Logo" 
-                className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 flex-shrink-0"
+                className="w-12 h-12 object-contain transition-transform duration-500 group-hover:rotate-12 flex-shrink-0"
             />
             {!collapsed && (
-                <span className="uppercase font-bold text-2xl tracking-tight transition-transform duration-300 group-hover:scale-105 origin-left whitespace-nowrap">
-                    <span className="text-black dark:text-white">PINE</span>
-                    <span className="text-[#0288c4]">GROOVE</span>
+                // Text - Progressive Illumination
+                <span className="uppercase font-bold text-2xl tracking-tight origin-left whitespace-nowrap flex">
+                    {renderProgressiveText("PINE", "text-black dark:text-white", 0)}
+                    {renderProgressiveText("GROOVE", "text-[#0288c4]", 4)}
                 </span>
             )}
           </Link>
@@ -59,7 +74,7 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
           {/* Desktop Collapse Toggle */}
           <button 
                 onClick={() => setCollapsed(!collapsed)}
-                className={`hidden md:flex absolute -right-3 top-9 w-6 h-6 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full items-center justify-center text-zinc-500 hover:text-sky-500 shadow-sm z-50`}
+                className={`hidden md:flex absolute -right-3 top-7 w-6 h-6 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full items-center justify-center text-zinc-500 hover:text-sky-500 shadow-sm z-50`}
             >
                 {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
             </button>
