@@ -59,7 +59,9 @@ export const Home: React.FC = () => {
          </div>
 
          <div className="relative z-10 max-w-4xl mx-auto text-white">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight drop-shadow-md">Find the perfect sound.</h1>
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight drop-shadow-md leading-tight">
+                High-Quality Royalty-Free Music for Videos and Media
+            </h1>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto font-medium drop-shadow-sm">
                 Premium stock music for your films, videos, and commercial projects.
             </p>
@@ -92,19 +94,41 @@ export const Home: React.FC = () => {
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <span className="text-sky-500">✦</span> Discover
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {discoverTracks.map(track => {
               const active = currentTrack?.id === track.id && isPlaying;
               return (
-                <div key={track.id} className="group relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-md" onClick={() => playTrack(track)}>
-                <img src={track.cover_url} alt={track.title} className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
-                <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center ${active ? 'opacity-100' : ''}`}>
-                    {active ? <Pause size={40} className="text-white fill-white" /> : <Play size={40} className="text-white fill-white" />}
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="font-bold text-sm truncate">{track.title}</p>
-                    <p className="text-xs opacity-80 truncate">{track.artist_name}</p>
-                </div>
+                <div key={track.id} className="group flex flex-col text-center">
+                    {/* Cover Image & Play Button */}
+                    <div 
+                        className="relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-md mb-3" 
+                        onClick={() => playTrack(track)}
+                    >
+                        <img 
+                            src={track.cover_url} 
+                            alt={track.title} 
+                            className="w-full h-full object-cover transition duration-500 group-hover:scale-110" 
+                        />
+                        <div className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            {active ? <Pause size={32} className="text-white fill-white" /> : <Play size={32} className="text-white fill-white" />}
+                        </div>
+                    </div>
+                    
+                    {/* Track Info & Link */}
+                    <Link 
+                        to={`/track/${track.id}`} 
+                        className="font-bold text-sm truncate block hover:text-sky-500 transition-colors"
+                        title={track.title}
+                    >
+                        {track.title}
+                    </Link>
+                    <Link 
+                        to={`/library?search=${encodeURIComponent(track.artist_name)}`} 
+                        className="text-xs opacity-70 truncate block hover:underline transition-colors"
+                        title={track.artist_name}
+                    >
+                        {track.artist_name}
+                    </Link>
                 </div>
             )
           })}

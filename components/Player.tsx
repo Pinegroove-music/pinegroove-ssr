@@ -4,21 +4,28 @@ import { Play, Pause, ShoppingCart, Volume2, VolumeX, Volume1 } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import { WaveformVisualizer } from './WaveformVisualizer';
 
+const formatTime = (time: number) => {
+  if (!Number.isFinite(time) || isNaN(time)) return '0:00';
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
 export const Player: React.FC = () => {
   const { currentTrack, isPlaying, togglePlay, isDarkMode, setProgress, volume, setVolume } = useStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (audio) {
       if (isPlaying) {
-        // Promise handling to avoid "play request interrupted" errors
         const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.catch(e => {
                 console.log("Playback prevented or interrupted:", e);
-                // If prevent default happens (e.g. browser policy), we might need to toggle state back
             });
         }
       } else {
@@ -38,18 +45,25 @@ export const Player: React.FC = () => {
     if (!audio) return;
 
     const updateProgress = () => {
-      if (audio.duration && Number.isFinite(audio.duration) && !isDragging) {
-        const p = (audio.currentTime / audio.duration) * 100;
-        setProgress(p);
+      if (audio.duration && Number.isFinite(audio.duration)) {
+        // Update local time states for the UI timers
+        setCurrentTime(audio.currentTime);
+        setDuration(audio.duration);
+
+        // Update global progress bar (store) if not dragging
+        if (!isDragging) {
+            const p = (audio.currentTime / audio.duration) * 100;
+            setProgress(p);
+        }
       }
     };
 
     const handleEnded = () => {
         useStore.getState().togglePlay();
         setProgress(0);
+        setCurrentTime(0);
     };
 
-    // 'loadedmetadata' ensures we catch the moment duration becomes available
     audio.addEventListener('loadedmetadata', updateProgress);
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('ended', handleEnded);
@@ -58,7 +72,7 @@ export const Player: React.FC = () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [isDragging, setProgress, currentTrack]); // Added currentTrack to ensure listeners re-attach if needed
+  }, [isDragging, setProgress, currentTrack]);
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
@@ -68,6 +82,7 @@ export const Player: React.FC = () => {
       const seekTime = (val / 100) * audioRef.current.duration;
       if (Number.isFinite(seekTime)) {
           audioRef.current.currentTime = seekTime;
+          setCurrentTime(seekTime);
       }
     }
   };
@@ -83,6 +98,7 @@ export const Player: React.FC = () => {
   if (!currentTrack) return null;
 
   const VolumeIcon = volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
+  const remainingTime = duration - currentTime;
 
   return (
     <div className={`
@@ -113,8 +129,8 @@ export const Player: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Main Controls: Play + Waveform (Center) */}
-      <div className="flex-1 flex items-center gap-4 min-w-0">
+      {/* 2. Main Controls: Play + Waveform + Timers (Center) */}
+      <div className="flex-1 flex items-center gap-4 min-w-0 justify-center">
           {/* Play Button */}
           <button 
             onClick={togglePlay}
@@ -123,27 +139,40 @@ export const Player: React.FC = () => {
             {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1"/>}
           </button>
 
-          {/* Interactive Waveform */}
-          <div className="relative flex-1 h-12 flex items-center group">
-                <div className="absolute inset-0 z-0 flex items-center">
-                    <WaveformVisualizer track={currentTrack} height="h-full" interactive={true} />
-                </div>
-                
-                {/* Invisible Overlay for Seek */}
-                <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    step="0.1"
-                    defaultValue={0} 
-                    onChange={handleSeek}
-                    onMouseDown={() => setIsDragging(true)}
-                    onMouseUp={() => setIsDragging(false)}
-                    onTouchStart={() => setIsDragging(true)}
-                    onTouchEnd={() => setIsDragging(false)}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                    title="Seek"
-                />
+          {/* Waveform Area with Timers */}
+          <div className="flex-1 flex items-center gap-3">
+              {/* Current Time */}
+              <span className="text-xs font-mono opacity-50 min-w-[35px] text-right">
+                  {formatTime(currentTime)}
+              </span>
+
+              {/* Interactive Waveform */}
+              <div className="relative flex-1 h-12 flex items-center group">
+                    <div className="absolute inset-0 z-0 flex items-center">
+                        <WaveformVisualizer track={currentTrack} height="h-full" interactive={true} />
+                    </div>
+                    
+                    {/* Invisible Overlay for Seek */}
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        step="0.1"
+                        defaultValue={0} 
+                        onChange={handleSeek}
+                        onMouseDown={() => setIsDragging(true)}
+                        onMouseUp={() => setIsDragging(false)}
+                        onTouchStart={() => setIsDragging(true)}
+                        onTouchEnd={() => setIsDragging(false)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                        title="Seek"
+                    />
+              </div>
+
+              {/* Remaining Time */}
+              <span className="text-xs font-mono opacity-50 min-w-[40px]">
+                  -{formatTime(remainingTime)}
+              </span>
           </div>
       </div>
 
