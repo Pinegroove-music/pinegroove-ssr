@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Player } from './components/Player';
+import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
 import { Library } from './pages/Library';
 import { TrackDetail } from './pages/TrackDetail';
@@ -22,6 +23,16 @@ const Layout: React.FC = () => {
   const [globalSearch, setGlobalSearch] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Ref for the scrollable main container
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top whenever the path changes
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
 
   const handleGlobalSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +43,9 @@ const Layout: React.FC = () => {
 
   // Hide search bar on specific category pages
   const hideSearchBar = location.pathname.startsWith('/categories/');
+  
+  // Hide footer on Library page
+  const showFooter = location.pathname !== '/library';
 
   return (
     <div className={`min-h-screen flex transition-colors duration-300 ${isDarkMode ? 'dark bg-zinc-950 text-zinc-100' : 'bg-white text-zinc-900'}`}>
@@ -69,7 +83,7 @@ const Layout: React.FC = () => {
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto scroll-smooth">
+        <main ref={mainContentRef} className="flex-1 overflow-y-auto scroll-smooth">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/library" element={<Library />} />
@@ -83,6 +97,9 @@ const Layout: React.FC = () => {
             <Route path="/faq" element={<Faq />} />
             <Route path="/content-id" element={<ContentId />} />
           </Routes>
+          
+          {/* Footer Component - Conditionally rendered */}
+          {showFooter && <Footer />}
         </main>
 
         {/* Persistent Player */}

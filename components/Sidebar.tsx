@@ -21,7 +21,7 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
     ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} 
     md:translate-x-0 md:static md:inset-0
     ${isDarkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-800'}
-    border-r flex flex-col
+    border-r flex flex-col pb-24
   `;
 
   return (
@@ -76,7 +76,7 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
           })}
         </nav>
 
-        {/* Theme Toggle Button */}
+        {/* Theme Toggle Button - Now at the bottom, replacing copyright */}
         <div className={`p-4 border-t ${isDarkMode ? 'border-zinc-800' : 'border-zinc-200'}`}>
             <button 
                 onClick={toggleTheme}
@@ -85,10 +85,6 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
                 {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                 <span className="font-medium">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
             </button>
-        </div>
-
-        <div className="p-4 text-xs opacity-60 text-center">
-          &copy; {new Date().getFullYear()} Pinegroove
         </div>
       </aside>
     </>

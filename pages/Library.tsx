@@ -71,7 +71,7 @@ export const Library: React.FC = () => {
                     checkJson(track.tags) ||
                     checkJson(track.genre) ||
                     checkJson(track.mood) ||
-                    checkJson(track.media_theme) // Added media_theme check
+                    checkJson(track.media_theme)
                 );
             });
         }
@@ -143,7 +143,7 @@ export const Library: React.FC = () => {
 
   const paginate = (pageNumber: number) => {
       setCurrentPage(pageNumber);
-      // Scroll the main content container to top, not the window
+      // Scroll the main content container to top
       const mainContainer = document.querySelector('main');
       if (mainContainer) {
           mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
@@ -155,7 +155,7 @@ export const Library: React.FC = () => {
   const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedSeasons.length > 0 || bpmRange;
 
   return (
-    <div className="flex flex-col lg:flex-row h-full min-h-screen">
+    <div className="flex flex-col lg:flex-row relative">
       
       {/* Mobile Filter Toggle */}
       <button 
@@ -167,7 +167,7 @@ export const Library: React.FC = () => {
 
       {/* Sidebar Filters */}
       <div className={`
-        lg:w-72 flex-shrink-0 p-6 border-r overflow-y-auto h-auto lg:h-[calc(100vh-6rem)] sticky top-0 no-scrollbar
+        lg:w-72 flex-shrink-0 p-6 border-r 
         ${mobileFiltersOpen ? 'block' : 'hidden lg:block'}
         ${isDarkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-100 bg-white'}
       `}>
@@ -234,27 +234,18 @@ export const Library: React.FC = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
-                    {/* Search Term Badge */}
                     {searchTerm && (
                         <ActiveFilterBadge label={`"${searchTerm}"`} onRemove={() => { setSearchTerm(''); setSearchParams({}); }} isDark={isDarkMode} />
                     )}
-                    
-                    {/* BPM Badge */}
                     {bpmRange && (
                         <ActiveFilterBadge label={`BPM: ${bpmRange}`} onRemove={() => setBpmRange(null)} isDark={isDarkMode} />
                     )}
-
-                    {/* Genre Badges */}
                     {selectedGenres.map(g => (
                         <ActiveFilterBadge key={g} label={g} onRemove={() => toggleFilter(selectedGenres, setSelectedGenres, g)} isDark={isDarkMode} />
                     ))}
-
-                    {/* Mood Badges */}
                     {selectedMoods.map(m => (
                         <ActiveFilterBadge key={m} label={m} onRemove={() => toggleFilter(selectedMoods, setSelectedMoods, m)} isDark={isDarkMode} />
                     ))}
-
-                    {/* Season Badges */}
                     {selectedSeasons.map(s => (
                         <ActiveFilterBadge key={s} label={s} onRemove={() => toggleFilter(selectedSeasons, setSelectedSeasons, s)} isDark={isDarkMode} />
                     ))}
@@ -264,7 +255,7 @@ export const Library: React.FC = () => {
       </div>
 
       {/* Track List */}
-      <div className="flex-1 p-4 lg:p-8 pb-32">
+      <div className="flex-1 p-4 lg:p-8">
         <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
             Library 
             {tracks.length > 0 && <span className="text-sm font-normal opacity-50 bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full">{tracks.length} Tracks</span>}
@@ -278,15 +269,15 @@ export const Library: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="flex flex-col gap-3 min-h-[50vh]">
+            <div className="flex flex-col gap-3">
                 {currentTracks.map(track => (
                 <TrackItem key={track.id} track={track} />
                 ))}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination Controls - Added large bottom margin (pb-40) to ensure visibility above fixed player */}
             {totalPages > 1 && (
-                <div className="mt-12 flex justify-center items-center gap-2">
+                <div className="mt-12 pb-40 flex justify-center items-center gap-2">
                     <button 
                         onClick={() => paginate(currentPage - 1)}
                         disabled={currentPage === 1}
@@ -296,14 +287,13 @@ export const Library: React.FC = () => {
                     </button>
                     
                     <div className="flex items-center gap-1">
-                        {/* Simple Page Numbers */}
                         {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                            // Logic to show ranges around current page could go here, keeping it simple for now
                             let pageNum = i + 1;
                             if (totalPages > 5 && currentPage > 3) {
                                 pageNum = currentPage - 2 + i;
                                 if (pageNum > totalPages) return null;
                             }
+                            if (!pageNum) return null;
                             
                             return (
                                 <button
