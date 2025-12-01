@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { MusicTrack, Album } from '../types';
 import { useStore } from '../store/useStore';
-import { Play, Pause, ShoppingCart, Clock, Music2, Calendar, FileText, Package, ArrowRight, Sparkles } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Clock, Music2, Calendar, FileText, Package, ArrowRight, Sparkles, ChevronDown, ChevronUp, Mic2 } from 'lucide-react';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 
 export const TrackDetail: React.FC = () => {
@@ -12,10 +12,12 @@ export const TrackDetail: React.FC = () => {
   const [relatedAlbum, setRelatedAlbum] = useState<Album | null>(null);
   const [recommendations, setRecommendations] = useState<MusicTrack[]>([]);
   const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
+  const [showLyrics, setShowLyrics] = useState(false);
 
   useEffect(() => {
     if (id) {
       window.scrollTo(0, 0); // Ensure page starts at top when navigating between recommended tracks
+      setShowLyrics(false); // Reset lyrics state on track change
       
       // 1. Fetch Track Details
       supabase.from('music_tracks').select('*').eq('id', id).single()
@@ -154,10 +156,11 @@ export const TrackDetail: React.FC = () => {
 
                 {/* License Box (Redesigned) */}
                 <div className="bg-sky-50 dark:bg-sky-900/20 p-8 rounded-2xl border border-sky-100 dark:border-sky-800 mb-8 relative overflow-hidden group">
-                    {/* Background Icon */}
-                    <ShoppingCart 
-                        size={120} 
-                        className="absolute -right-6 -bottom-6 text-sky-200 dark:text-sky-800 opacity-20 transform -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-500"
+                    {/* Background Icon - Gumroad */}
+                    <img
+                        src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/gumroad-icon.svg"
+                        alt="Gumroad"
+                        className="absolute -right-8 -bottom-8 w-48 h-48 opacity-20 transform -rotate-12 pointer-events-none group-hover:scale-110 transition-transform duration-500"
                     />
 
                     <div className="relative z-10">
@@ -171,6 +174,29 @@ export const TrackDetail: React.FC = () => {
                         </a>
                     </div>
                 </div>
+
+                {/* Lyrics Section (Conditional) */}
+                {track.lyrics && (
+                    <div className={`mb-8 rounded-xl border transition-all overflow-hidden ${isDarkMode ? 'bg-zinc-900/50 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
+                        <button 
+                            onClick={() => setShowLyrics(!showLyrics)}
+                            className="w-full flex items-center justify-between p-5 font-bold text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                        >
+                            <span className="flex items-center gap-2 text-sky-600 dark:text-sky-400">
+                                <Mic2 size={20} /> Song Lyrics
+                            </span>
+                            {showLyrics ? <ChevronUp size={20} className="opacity-50"/> : <ChevronDown size={20} className="opacity-50"/>}
+                        </button>
+                        
+                        {showLyrics && (
+                            <div className="p-6 pt-0 border-t border-dashed border-gray-200 dark:border-zinc-800 mt-2">
+                                <div className="italic text-lg leading-relaxed opacity-80 whitespace-pre-line font-serif pt-4">
+                                    {track.lyrics}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Promo Card */}
                 {relatedAlbum && (

@@ -36,16 +36,17 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
 
       <aside className={sidebarClasses}>
         <div className="p-6 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-3 font-bold text-2xl tracking-tight">
-            {/* Custom Logo in Circle - Maximized Logo Size */}
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${isDarkMode ? 'bg-sky-500' : 'bg-sky-600'}`}>
-                <img 
-                    src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/logo-pinegroove.svg?v=3" 
-                    alt="Pinegroove Logo" 
-                    className="w-8 h-8 object-contain"
-                />
-            </div>
-            <span>Pinegroove</span>
+          <Link to="/" className="flex items-center gap-1 group">
+            {/* Custom Logo - Larger, No Background */}
+            <img 
+                src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/logo-pinegroove.svg?v=2" 
+                alt="Pinegroove Logo" 
+                className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110"
+            />
+            <span className="uppercase font-bold text-2xl tracking-tight transition-transform duration-300 group-hover:scale-105 origin-left">
+              <span className="text-black dark:text-white">PINE</span>
+              <span className="text-[#0288c4]">GROOVE</span>
+            </span>
           </Link>
           <button onClick={() => setMobileOpen(false)} className="md:hidden">
             <X size={24} />

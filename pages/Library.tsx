@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { MusicTrack } from '../types';
 import { useStore } from '../store/useStore';
-import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 
@@ -12,6 +12,10 @@ export const Library: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDarkMode } = useStore();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
 
   // Filters State
   const initialSearch = searchParams.get('search') || '';
@@ -33,14 +37,16 @@ export const Library: React.FC = () => {
   const moods = ['Inspiring', 'Happy', 'Dark', 'Emotional', 'Dramatic', 'Peaceful', 'Energetic', 'Corporate', 'Uplifting', 'Sad'];
   const seasons = ['Spring', 'Summer', 'Autumn', 'Winter', 'Christmas', 'Halloween'];
   
+  // Reset to page 1 when filters change
   useEffect(() => {
+    setCurrentPage(1);
     fetchTracks();
   }, [selectedGenres, selectedMoods, selectedSeasons, bpmRange, searchTerm]);
 
   const fetchTracks = async () => {
     setLoading(true);
     
-    // 1. Fetch raw data
+    // 1. Fetch raw data (Limit increased to allow client-side pagination over a larger set)
     const { data, error } = await supabase.from('music_tracks').select('*').limit(1000);
     
     if (error) {
@@ -126,6 +132,23 @@ export const Library: React.FC = () => {
       setSelectedSeasons([]);
       setBpmRange(null);
       setSearchParams({}); // Clear URL params
+  };
+
+  // Pagination Calculations
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTracks = tracks.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(tracks.length / itemsPerPage);
+
+  const paginate = (pageNumber: number) => {
+      setCurrentPage(pageNumber);
+      // Scroll the main content container to top, not the window
+      const mainContainer = document.querySelector('main');
+      if (mainContainer) {
+          mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
   };
 
   const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedSeasons.length > 0 || bpmRange;
@@ -253,11 +276,64 @@ export const Library: React.FC = () => {
             {hasActiveFilters ? "No tracks found matching your filters." : "No tracks available."}
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {tracks.map(track => (
-              <TrackItem key={track.id} track={track} />
-            ))}
-          </div>
+          <>
+            <div className="flex flex-col gap-3 min-h-[50vh]">
+                {currentTracks.map(track => (
+                <TrackItem key={track.id} track={track} />
+                ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="mt-12 flex justify-center items-center gap-2">
+                    <button 
+                        onClick={() => paginate(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 disabled:opacity-30' : 'hover:bg-gray-100 disabled:opacity-30'}`}
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                        {/* Simple Page Numbers */}
+                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                            // Logic to show ranges around current page could go here, keeping it simple for now
+                            let pageNum = i + 1;
+                            if (totalPages > 5 && currentPage > 3) {
+                                pageNum = currentPage - 2 + i;
+                                if (pageNum > totalPages) return null;
+                            }
+                            
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => paginate(pageNum)}
+                                    className={`
+                                        w-8 h-8 rounded-lg text-sm font-medium transition-all
+                                        ${currentPage === pageNum 
+                                            ? 'bg-sky-600 text-white shadow-md' 
+                                            : (isDarkMode ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-gray-100 text-zinc-600')}
+                                    `}
+                                >
+                                    {pageNum}
+                                </button>
+                            )
+                        })}
+                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                            <span className="opacity-50 px-1">...</span>
+                        )}
+                    </div>
+
+                    <button 
+                        onClick={() => paginate(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 disabled:opacity-30' : 'hover:bg-gray-100 disabled:opacity-30'}`}
+                    >
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -352,10 +428,17 @@ const TrackItem: React.FC<{ track: MusicTrack }> = ({ track }) => {
                 </div>
             </div>
 
-            {/* Info - Fixed Width */}
-            <div className="w-40 md:w-60 min-w-0">
+            {/* Info - Flexible on mobile to push cart, Fixed on Desktop to allow waveform */}
+            <div className="flex-1 md:flex-none md:w-60 min-w-0">
                 <Link to={`/track/${track.id}`} className="font-bold text-base hover:text-sky-500 transition-colors block truncate">{track.title}</Link>
-                <Link to={`/library?search=${encodeURIComponent(track.artist_name)}`} className="text-xs opacity-70 hover:underline">{track.artist_name}</Link>
+                <div className="flex items-center gap-2">
+                    <Link to={`/library?search=${encodeURIComponent(track.artist_name)}`} className="text-xs opacity-70 hover:underline">{track.artist_name}</Link>
+                    {track.lyrics && (
+                        <span title="Has Lyrics">
+                            <Mic2 size={12} className="text-sky-500 opacity-80" />
+                        </span>
+                    )}
+                </div>
                 <div className="flex flex-wrap gap-2 mt-1">
                     {track.genre?.slice(0, 1).map(g => (
                         <span key={g} className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300">{g}</span>
@@ -377,7 +460,7 @@ const TrackItem: React.FC<{ track: MusicTrack }> = ({ track }) => {
                 
                 <a 
                     href={track.gumroad_link || '#'} 
-                    className="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-full shadow-lg hover:shadow-xl transition-all"
+                    className="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-full shadow-lg hover:shadow-xl transition-all flex-shrink-0"
                     title="Buy License"
                 >
                     <ShoppingCart size={18} />
