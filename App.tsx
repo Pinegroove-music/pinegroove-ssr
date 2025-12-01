@@ -41,8 +41,8 @@ const Layout: React.FC = () => {
     }
   };
 
-  // Hide search bar on specific category pages
-  const hideSearchBar = location.pathname.startsWith('/categories/');
+  // Hide search bar on specific category pages AND Content ID page
+  const hideSearchBar = location.pathname.startsWith('/categories/') || location.pathname === '/content-id';
   
   // Hide footer on Library page
   const showFooter = location.pathname !== '/library';
@@ -62,7 +62,7 @@ const Layout: React.FC = () => {
               <Menu size={24} />
            </button>
            
-           {/* Global Search Bar - Hidden on category pages */}
+           {/* Global Search Bar - Hidden on category pages and Content ID */}
            {!hideSearchBar && (
              <form onSubmit={handleGlobalSearch} className="flex-1 max-w-5xl mx-auto relative w-full animate-in fade-in duration-300">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 opacity-40" size={18} />
