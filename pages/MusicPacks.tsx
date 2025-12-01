@@ -33,7 +33,7 @@ export const MusicPacks: React.FC = () => {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-12 pb-32">
+    <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-12 pb-32">
       <div className="flex items-center gap-3 mb-4">
         <Disc size={32} className="text-sky-500" />
         <h1 className="text-4xl font-black tracking-tight">Music Packs</h1>
@@ -59,8 +59,8 @@ export const MusicPacks: React.FC = () => {
             </p>
          </div>
       ) : (
-        /* Grid Layout: 1 col mobile, 2 tablet, 3 desktop, 4 large screens (xl:grid-cols-4) */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        /* Grid Layout: 1 col mobile, 2 tablet, 3 desktop, 4 large screens, 5 on ultra wide */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
             {albums.map(album => (
                 <div 
                     key={album.id} 

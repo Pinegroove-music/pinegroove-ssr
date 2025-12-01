@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Library, Info, HelpCircle, ShieldAlert, Music, X, Sun, Moon } from 'lucide-react';
+import { Home, Library, Info, HelpCircle, ShieldAlert, Music, X, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: boolean) => void }> = ({ mobileOpen, setMobileOpen }) => {
   const { isDarkMode, toggleTheme } = useStore();
   const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
 
   const navItems = [
     { label: 'Home', path: '/', icon: Home },
-    { label: 'Libreria', path: '/library', icon: Library },
+    { label: 'Library', path: '/library', icon: Library },
     { label: 'Music Packs', path: '/music-packs', icon: Music },
     { label: 'About', path: '/about', icon: Info },
     { label: 'Content ID', path: '/content-id', icon: ShieldAlert },
@@ -17,9 +18,10 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
   ];
 
   const sidebarClasses = `
-    fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-in-out
+    fixed inset-y-0 left-0 z-40 transform transition-all duration-300 ease-in-out
     ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} 
     md:translate-x-0 md:static md:inset-0
+    ${collapsed ? 'md:w-20' : 'md:w-64'} w-64
     ${isDarkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-800'}
     border-r flex flex-col pb-24
   `;
@@ -35,25 +37,35 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
       )}
 
       <aside className={sidebarClasses}>
-        <div className="p-6 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-1 group">
+        <div className={`p-6 flex items-center ${collapsed ? 'justify-center' : 'justify-between'} relative`}>
+          <Link to="/" className="flex items-center gap-1 group overflow-hidden">
             {/* Custom Logo - Larger, No Background */}
             <img 
                 src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/logo-pinegroove.svg?v=2" 
                 alt="Pinegroove Logo" 
-                className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110"
+                className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 flex-shrink-0"
             />
-            <span className="uppercase font-bold text-2xl tracking-tight transition-transform duration-300 group-hover:scale-105 origin-left">
-              <span className="text-black dark:text-white">PINE</span>
-              <span className="text-[#0288c4]">GROOVE</span>
-            </span>
+            {!collapsed && (
+                <span className="uppercase font-bold text-2xl tracking-tight transition-transform duration-300 group-hover:scale-105 origin-left whitespace-nowrap">
+                    <span className="text-black dark:text-white">PINE</span>
+                    <span className="text-[#0288c4]">GROOVE</span>
+                </span>
+            )}
           </Link>
-          <button onClick={() => setMobileOpen(false)} className="md:hidden">
+          <button onClick={() => setMobileOpen(false)} className="md:hidden absolute right-4">
             <X size={24} />
           </button>
+
+          {/* Desktop Collapse Toggle */}
+          <button 
+                onClick={() => setCollapsed(!collapsed)}
+                className={`hidden md:flex absolute -right-3 top-9 w-6 h-6 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full items-center justify-center text-zinc-500 hover:text-sky-500 shadow-sm z-50`}
+            >
+                {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            </button>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -63,27 +75,30 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
                 className={`
-                  flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                  flex items-center gap-3 px-3 py-3 rounded-lg transition-colors
                   ${isActive 
                     ? (isDarkMode ? 'bg-sky-900/30 text-sky-400' : 'bg-sky-100 text-sky-700') 
                     : (isDarkMode ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100')}
+                  ${collapsed ? 'justify-center' : ''}
                 `}
+                title={collapsed ? item.label : ''}
               >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
+                <Icon size={22} className="flex-shrink-0" />
+                {!collapsed && <span className="font-medium whitespace-nowrap">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
-        {/* Theme Toggle Button - Now at the bottom, replacing copyright */}
+        {/* Theme Toggle Button - Now at the bottom */}
         <div className={`p-4 border-t ${isDarkMode ? 'border-zinc-800' : 'border-zinc-200'}`}>
             <button 
                 onClick={toggleTheme}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-zinc-100 text-zinc-600 hover:text-black'}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-zinc-100 text-zinc-600 hover:text-black'} ${collapsed ? 'justify-center' : ''}`}
+                title={collapsed ? (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode') : ''}
             >
-                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-                <span className="font-medium">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                {isDarkMode ? <Sun size={22} className="flex-shrink-0" /> : <Moon size={22} className="flex-shrink-0" />}
+                {!collapsed && <span className="font-medium whitespace-nowrap">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>}
             </button>
         </div>
       </aside>

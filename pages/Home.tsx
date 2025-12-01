@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MusicTrack, Client, Album, MediaTheme } from '../types';
 import { supabase } from '../services/supabase';
 import { useStore } from '../store/useStore';
@@ -15,6 +15,9 @@ export const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { isDarkMode, playTrack, currentTrack, isPlaying } = useStore();
   const navigate = useNavigate();
+  
+  // Ref for Clients Carousel
+  const clientsScrollRef = useRef<HTMLDivElement>(null);
 
   const popularGenres = [
     'Cinematic', 'Corporate', 'Ambient', 'Rock', 'Pop', 'Electronic',
@@ -142,12 +145,45 @@ export const Home: React.FC = () => {
     fetchData();
   }, []);
 
+  // Clients Carousel Animation Logic (Move... Stop... Move...)
+  useEffect(() => {
+    if (clients.length === 0) return;
+
+    const interval = setInterval(() => {
+        const container = clientsScrollRef.current;
+        if (container) {
+            const { scrollLeft, scrollWidth } = container;
+            const singleSetWidth = scrollWidth / 6; // We duplicated clients 6 times
+            
+            // Seamless Loop Check:
+            // If we have scrolled past 3 full sets, reset back by 1 set instantly.
+            // This keeps the scroll position in a safe middle zone without the user noticing.
+            if (scrollLeft >= singleSetWidth * 3) {
+                container.scrollLeft = scrollLeft - singleSetWidth;
+            }
+
+            // Move by roughly one item + gap
+            // Calculating dynamic width: First item width + 64px gap (gap-16)
+            const item = container.firstElementChild?.firstElementChild as HTMLElement;
+            const moveAmount = item ? item.offsetWidth + 64 : 200;
+
+            // Perform the smooth scroll
+            container.scrollBy({ left: moveAmount, behavior: 'smooth' });
+        }
+    }, 2500); // 2.5 seconds pause between moves
+
+    return () => clearInterval(interval);
+  }, [clients]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/library?search=${encodeURIComponent(searchQuery)}`);
     }
   };
+
+  // Duplicate clients for infinite scroll loop (x6 to be safe)
+  const displayClients = clients.length > 0 ? [...clients, ...clients, ...clients, ...clients, ...clients, ...clients] : [];
 
   return (
     <div className="space-y-16 pb-20">
@@ -165,7 +201,7 @@ export const Home: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 transition-colors duration-500"></div>
          </div>
 
-         <div className="relative z-10 max-w-4xl mx-auto text-white">
+         <div className="relative z-10 w-full max-w-[1920px] mx-auto px-6 text-white">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight drop-shadow-md leading-tight">
                 Find the perfect sound for your story.
             </h1>
@@ -197,7 +233,7 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Discover Section */}
-      <section className="container mx-auto px-4">
+      <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <span className="text-sky-500">✦</span> Discover New Music
         </h2>
@@ -257,7 +293,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Features Grid */}
-      <section className="container mx-auto px-4 py-4">
+      <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-4">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
@@ -293,7 +329,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Browse By Genre Section */}
-      <section className="container mx-auto px-4 text-center">
+      <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 text-center">
         <h2 className="text-2xl font-bold mb-6 flex items-center justify-start gap-2">
           <span className="text-sky-500">✦</span> Browse By Genre
         </h2>
@@ -330,7 +366,7 @@ export const Home: React.FC = () => {
 
       {/* Featured Music Pack Section (Ambient Blur Effect) */}
       {featuredPack && (
-        <section className="container mx-auto px-4 py-8">
+        <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <Disc className="text-sky-500" size={24}/> Featured Music Pack
             </h2>
@@ -395,7 +431,7 @@ export const Home: React.FC = () => {
 
       {/* Media Themes Section (New - Randomized) */}
       {mediaThemes.length > 0 && (
-        <section className="container mx-auto px-4 py-8">
+        <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <Clapperboard className="text-sky-500" size={24}/> Browse by Media Theme
             </h2>
@@ -426,7 +462,7 @@ export const Home: React.FC = () => {
       )}
 
       {/* Trending Section */}
-      <section className="container mx-auto px-4">
+      <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10">
         <h2 className="text-2xl font-bold mb-6">Trending Now</h2>
         {/* Changed layout to 2 columns (grid-cols-1 lg:grid-cols-2) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -489,7 +525,7 @@ export const Home: React.FC = () => {
       </section>
 
       {/* Gumroad Subscribe Section */}
-      <section className="container mx-auto px-4 py-8">
+      <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
         <div className={`relative overflow-hidden rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xl'}`}>
 
             {/* Background Icon */}
@@ -526,17 +562,73 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Clients Carousel */}
-      <section className="container mx-auto px-4 py-10 overflow-hidden">
-        <h3 className="text-center text-sm uppercase tracking-widest opacity-50 mb-8 font-bold">Trusted By</h3>
-        <div className="flex justify-center flex-wrap gap-8 md:gap-16 items-center grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-500">
-          {clients.length > 0 ? clients.map(client => (
-            <img key={client.id} src={client.logo_url} alt={client.name} className="h-12 w-auto object-contain" />
-          )) : (
-            // Fallback if no clients in DB yet
-            [1,2,3,4,5].map(i => <div key={i} className="h-8 w-32 bg-current rounded animate-pulse opacity-20"></div>)
-          )}
+      {/* Meet the Composer Section */}
+      <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
+        <div className={`relative overflow-hidden rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-10 ${isDarkMode ? 'bg-black border border-zinc-800' : 'bg-zinc-900 text-white'}`}>
+            
+            <div className="flex-1 text-center md:text-left z-10">
+                <div className="inline-block px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold uppercase tracking-widest mb-4 text-sky-400">
+                    The Artist
+                </div>
+                <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight leading-tight text-white">
+                    One Composer, <br/>Countless Sounds
+                </h2>
+                <p className="text-lg opacity-80 mb-8 max-w-lg mx-auto md:mx-0 font-medium leading-relaxed text-zinc-300">
+                    Meet Francesco Biondi, the composer and producer behind Pinegroove.
+                </p>
+                
+                <Link 
+                    to="/about" 
+                    className="inline-flex items-center gap-2 bg-white text-black hover:bg-gray-200 px-8 py-3.5 rounded-full font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+                >
+                    Read Biography <ArrowRight size={18}/>
+                </Link>
+            </div>
+
+            <div className="relative z-10">
+                <div className="w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden border-4 border-white/10 shadow-2xl relative group">
+                    <img 
+                        src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/Francesco-Biondi-profilo.jpg" 
+                        alt="Francesco Biondi" 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    {/* Overlay gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+                </div>
+                
+                {/* Decorative elements behind */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-sky-500/20 blur-[80px] rounded-full -z-10 pointer-events-none"></div>
+            </div>
         </div>
+      </section>
+
+      {/* Clients Carousel (Infinite Move-Stop-Move Animation) */}
+      <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-10 overflow-hidden">
+        <h3 className="text-center text-sm uppercase tracking-widest opacity-50 mb-8 font-bold">Trusted By</h3>
+        
+        {displayClients.length > 0 ? (
+            <div 
+                ref={clientsScrollRef}
+                className="w-full overflow-x-auto no-scrollbar whitespace-nowrap"
+            >
+                <div className="flex items-center gap-16 px-4">
+                    {displayClients.map((client, index) => (
+                        <div key={`${client.id}-${index}`} className="flex-shrink-0 w-32 md:w-40 flex items-center justify-center h-20">
+                            <img 
+                                src={client.logo_url} 
+                                alt={client.name} 
+                                className="max-w-full max-h-full object-contain grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-500" 
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        ) : (
+            // Fallback skeleton
+            <div className="flex justify-center flex-wrap gap-16 items-center">
+                {[1,2,3,4,5].map(i => <div key={i} className="h-8 w-32 bg-current rounded animate-pulse opacity-20"></div>)}
+            </div>
+        )}
       </section>
 
     </div>
