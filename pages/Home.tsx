@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { MusicTrack, Client, Album } from '../types';
+import { MusicTrack, Client, Album, MediaTheme } from '../types';
 import { supabase } from '../services/supabase';
 import { useStore } from '../store/useStore';
-import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, ShieldCheck, Lock, Disc, Mail } from 'lucide-react';
+import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, ShieldCheck, Lock, Disc, Mail, Clapperboard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 
@@ -11,6 +11,7 @@ export const Home: React.FC = () => {
   const [trendingTracks, setTrendingTracks] = useState<MusicTrack[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [featuredPack, setFeaturedPack] = useState<Album | null>(null);
+  const [mediaThemes, setMediaThemes] = useState<MediaTheme[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const { isDarkMode, playTrack, currentTrack, isPlaying } = useStore();
   const navigate = useNavigate();
@@ -127,6 +128,14 @@ export const Home: React.FC = () => {
       if (packs && packs.length > 0) {
         const randomPack = packs[Math.floor(Math.random() * packs.length)];
         setFeaturedPack(randomPack);
+      }
+
+      // 5. Fetch Media Themes (Randomize)
+      // Fetch all themes first, then shuffle and slice client-side
+      const { data: themes } = await supabase.from('media_theme').select('*');
+      if (themes && themes.length > 0) {
+        const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
+        setMediaThemes(shuffledThemes.slice(0, 4));
       }
     };
 
@@ -380,6 +389,38 @@ export const Home: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+      )}
+
+      {/* Media Themes Section (New - Randomized) */}
+      {mediaThemes.length > 0 && (
+        <section className="container mx-auto px-4 py-8">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Clapperboard className="text-sky-500" size={24}/> Browse by Media Theme
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {mediaThemes.map(theme => (
+                    <Link 
+                        key={theme.id}
+                        to={`/library?search=${encodeURIComponent(theme.title)}`}
+                        className="group relative h-48 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                    >
+                        <img 
+                            src={theme.media_theme_pic} 
+                            alt={theme.title} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                        <div className="absolute bottom-0 left-0 p-6 w-full">
+                            <h3 className="text-white font-bold text-xl drop-shadow-md">{theme.title}</h3>
+                            <span className="text-white/80 text-xs font-medium uppercase tracking-wider mt-1 inline-flex items-center gap-1 group-hover:text-sky-300 transition-colors">
+                                Explore <ArrowRight size={12}/>
+                            </span>
+                        </div>
+                    </Link>
+                ))}
             </div>
         </section>
       )}

@@ -70,7 +70,8 @@ export const Library: React.FC = () => {
                     checkJson(track.credits) ||
                     checkJson(track.tags) ||
                     checkJson(track.genre) ||
-                    checkJson(track.mood) 
+                    checkJson(track.mood) ||
+                    checkJson(track.media_theme) // Added media_theme check
                 );
             });
         }

@@ -38,6 +38,13 @@ export interface Album {
   gumroad_link: string | null;
 }
 
+export interface MediaTheme {
+  id: number;
+  created_at: string;
+  title: string;
+  media_theme_pic: string;
+}
+
 export interface FilterState {
   genres: string[];
   moods: string[];
