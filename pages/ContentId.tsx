@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { ShieldCheck, Youtube, Loader2, CheckCircle, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { ShieldCheck, Youtube, Loader2, CheckCircle, AlertCircle, Plus, Trash2, Calendar } from 'lucide-react';
 
 export const ContentId: React.FC = () => {
   const { isDarkMode } = useStore();
@@ -181,7 +181,22 @@ export const ContentId: React.FC = () => {
                         </div>
                     )}
 
-                    {/* 4. Video URLs (Dynamic) */}
+                    {/* 4. Date of Purchase (NEW) */}
+                    <div>
+                        <label className="block text-sm font-bold mb-2">Date of Purchase <span className="text-red-500">*</span></label>
+                        <p className="text-xs opacity-60 mb-2">Please be as accurate as possible: if you don't remember the exact date, just indicate the month or the year.</p>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-3.5 opacity-50" size={20} />
+                            <input 
+                                required 
+                                type="date" 
+                                name="purchase_date" 
+                                className={`w-full p-3 pl-10 rounded-lg border bg-transparent outline-none transition-all focus:ring-2 focus:ring-sky-500 ${isDarkMode ? 'border-zinc-700 focus:border-sky-500 [color-scheme:dark]' : 'border-zinc-300 focus:border-sky-500'}`}
+                            />
+                        </div>
+                    </div>
+
+                    {/* 5. Video URLs (Dynamic) */}
                     <div>
                         <label className="block text-sm font-bold mb-2">YouTube Video Link(s) <span className="text-red-500">*</span></label>
                         <div className="space-y-3">
