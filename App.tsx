@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'r
 import { Sidebar } from './components/Sidebar';
 import { Player } from './components/Player';
 import { Footer } from './components/Footer';
+import { CookieConsent } from './components/CookieConsent';
 import { Home } from './pages/Home';
 import { Library } from './pages/Library';
 import { TrackDetail } from './pages/TrackDetail';
@@ -163,6 +164,9 @@ const Layout: React.FC = () => {
           {/* Footer Component - Conditionally rendered */}
           {showFooter && <Footer />}
         </main>
+
+        {/* Cookie Consent Banner */}
+        <CookieConsent />
 
         {/* Persistent Player */}
         <Player />

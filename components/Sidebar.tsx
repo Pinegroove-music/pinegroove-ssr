@@ -22,8 +22,8 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
     ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} 
     md:translate-x-0 md:static md:inset-0
     ${collapsed ? 'md:w-20' : 'md:w-64'} w-64
-    ${isDarkMode ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-800'}
-    border-r flex flex-col pb-24
+    ${isDarkMode ? 'bg-zinc-950 border-zinc-900 text-zinc-300' : 'bg-gray-100 border-gray-200 text-zinc-800'}
+    border-r flex flex-col pb-24 shadow-md z-50
   `;
 
   // Helper to render progressive text
@@ -92,8 +92,8 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
                 className={`
                   flex items-center gap-3 px-3 py-3 rounded-lg transition-colors
                   ${isActive 
-                    ? (isDarkMode ? 'bg-sky-900/30 text-sky-400' : 'bg-sky-100 text-sky-700') 
-                    : (isDarkMode ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100')}
+                    ? (isDarkMode ? 'bg-sky-900/20 text-sky-400' : 'bg-white text-sky-700 shadow-sm') 
+                    : (isDarkMode ? 'hover:bg-zinc-900 text-zinc-400 hover:text-zinc-100' : 'hover:bg-gray-200/50')}
                   ${collapsed ? 'justify-center' : ''}
                 `}
                 title={collapsed ? item.label : ''}
@@ -106,10 +106,10 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
         </nav>
 
         {/* Theme Toggle Button - Now at the bottom */}
-        <div className={`p-4 border-t ${isDarkMode ? 'border-zinc-800' : 'border-zinc-200'}`}>
+        <div className={`p-4 border-t ${isDarkMode ? 'border-zinc-900' : 'border-zinc-300'}`}>
             <button 
                 onClick={toggleTheme}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-zinc-100 text-zinc-600 hover:text-black'} ${collapsed ? 'justify-center' : ''}`}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-zinc-900 text-zinc-400 hover:text-white' : 'hover:bg-gray-200/50 text-zinc-600 hover:text-black'} ${collapsed ? 'justify-center' : ''}`}
                 title={collapsed ? (isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode') : ''}
             >
                 {isDarkMode ? <Sun size={22} className="flex-shrink-0" /> : <Moon size={22} className="flex-shrink-0" />}

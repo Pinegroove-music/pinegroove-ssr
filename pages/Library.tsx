@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { MusicTrack } from '../types';
 import { useStore } from '../store/useStore';
-import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles, Check, Trash2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 
@@ -78,22 +78,23 @@ export const Library: React.FC = () => {
             return false;
         };
 
-        // Search Term
+        // Search Term (supports multiple keywords separated by space)
         if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+            const terms = searchTerm.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+            
             filteredData = filteredData.filter(track => {
-                const check = (val: any) => val && String(val).toLowerCase().includes(term);
-                const checkJson = (val: any) => val && JSON.stringify(val).toLowerCase().includes(term);
+                const trackString = [
+                    track.title,
+                    track.artist_name,
+                    JSON.stringify(track.credits),
+                    JSON.stringify(track.tags),
+                    JSON.stringify(track.genre),
+                    JSON.stringify(track.mood),
+                    JSON.stringify(track.media_theme)
+                ].join(' ').toLowerCase();
 
-                return (
-                    check(track.title) || 
-                    check(track.artist_name) ||
-                    checkJson(track.credits) ||
-                    checkJson(track.tags) ||
-                    checkJson(track.genre) ||
-                    checkJson(track.mood) ||
-                    checkJson(track.media_theme)
-                );
+                // OR logic: Return true if ANY of the search terms is found in the track
+                return terms.some(t => trackString.includes(t));
             });
         }
 
@@ -136,20 +137,33 @@ export const Library: React.FC = () => {
     }
   };
 
-  // Function to quickly filter by similar tracks (based on primary genre)
+  // Function to filter by similar tracks based on Genres and Moods
   const findSimilar = (track: MusicTrack) => {
-      // Logic: Pick the first genre and set it as the active filter
-      if (Array.isArray(track.genre) && track.genre.length > 0) {
-          const genre = track.genre[0];
-          // Clear other filters to focus on this
-          clearAllFilters();
-          // Set new filter
-          setSelectedGenres([genre]);
-          // Scroll top
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Extract up to 2 genres
+      let newGenres: string[] = [];
+      if (Array.isArray(track.genre)) {
+          newGenres = track.genre.slice(0, 2);
       } else if (typeof track.genre === 'string') {
-          clearAllFilters();
-          setSelectedGenres([track.genre]);
+          newGenres = [track.genre];
+      }
+
+      // Extract up to 2 moods
+      let newMoods: string[] = [];
+      if (Array.isArray(track.mood)) {
+          newMoods = track.mood.slice(0, 2);
+      } else if (typeof track.mood === 'string') {
+          newMoods = [track.mood];
+      }
+
+      // Apply filters if we found anything
+      if (newGenres.length > 0 || newMoods.length > 0) {
+          clearAllFilters(); // Reset everything first
+          
+          // Set specific filters so they appear as removable badges
+          if (newGenres.length > 0) setSelectedGenres(newGenres);
+          if (newMoods.length > 0) setSelectedMoods(newMoods);
+          
+          // Scroll top
           window.scrollTo({ top: 0, behavior: 'smooth' });
       }
   };
@@ -224,17 +238,19 @@ export const Library: React.FC = () => {
         >
              <div className="space-y-1 pb-4">
                 {['slow', 'medium', 'fast'].map(range => (
-                    <label key={range} className="flex items-center gap-2 cursor-pointer text-sm opacity-80 hover:opacity-100 py-1">
-                        <input 
-                            type="radio" 
-                            name="bpm" 
-                            checked={bpmRange === range} 
-                            onClick={() => setBpmRange(bpmRange === range ? null : range as any)}
-                            onChange={() => {}}
-                            className="accent-sky-500"
-                        />
+                    <button 
+                        key={range} 
+                        onClick={() => setBpmRange(bpmRange === range ? null : range as any)}
+                        className={`
+                            flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition-all mb-1
+                            ${bpmRange === range 
+                                ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 font-bold border border-sky-200 dark:border-sky-800' 
+                                : 'opacity-80 hover:opacity-100 hover:bg-gray-50 dark:hover:bg-zinc-800/50'}
+                        `}
+                    >
                         <span className="capitalize">{range}</span>
-                    </label>
+                        {bpmRange === range && <Check size={14} />}
+                    </button>
                 ))}
             </div>
         </CollapsibleFilterSection>
@@ -248,16 +264,16 @@ export const Library: React.FC = () => {
             isDark={isDarkMode}
         />
 
-        {/* Active Filters Section */}
+        {/* Active Filters Section (Redesigned) */}
         {hasActiveFilters && (
-            <div className={`mt-8 pt-6 border-t animate-in fade-in slide-in-from-top-2 duration-300 ${isDarkMode ? 'border-zinc-800' : 'border-zinc-100'}`}>
-                <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-bold text-xs uppercase opacity-50 tracking-wider">Active Filters</h4>
+            <div className={`mt-8 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${isDarkMode ? 'border-zinc-800 bg-black/20' : 'border-zinc-200 bg-zinc-50'}`}>
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-dashed border-gray-300 dark:border-zinc-700">
+                    <h4 className="font-bold text-sm text-sky-600 dark:text-sky-400">ACTIVE FILTERS</h4>
                     <button 
                         onClick={clearAllFilters}
-                        className="text-xs text-red-500 hover:text-red-600 font-medium hover:underline flex items-center gap-1"
+                        className="text-xs bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 px-2 py-1 rounded transition-colors flex items-center gap-1 font-bold"
                     >
-                        <X size={12} /> Clear All
+                        <Trash2 size={12} /> Clear All
                     </button>
                 </div>
                 
@@ -362,17 +378,17 @@ export const Library: React.FC = () => {
 // Helper Component for Active Filters
 const ActiveFilterBadge: React.FC<{ label: string, onRemove: () => void, isDark: boolean }> = ({ label, onRemove, isDark }) => (
     <span className={`
-        inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors
-        ${isDark ? 'bg-sky-900/30 text-sky-200 border border-sky-800' : 'bg-sky-100 text-sky-800 border border-sky-200'}
+        inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border shadow-sm
+        ${isDark ? 'bg-sky-900/30 text-sky-200 border-sky-800 hover:bg-sky-900/50' : 'bg-white text-sky-700 border-sky-200 hover:bg-sky-50'}
     `}>
         {label}
-        <button onClick={onRemove} className="hover:opacity-60 p-0.5">
-            <X size={10} />
+        <button onClick={onRemove} className="hover:opacity-60 p-0.5 ml-1">
+            <X size={12} />
         </button>
     </span>
 );
 
-// Collapsible Filter Component (unchanged)
+// Collapsible Filter Component (UPDATED: Clickable Text instead of Checkbox)
 const CollapsibleFilterSection: React.FC<{ 
     title: string, 
     items?: string[], 
@@ -398,23 +414,33 @@ const CollapsibleFilterSection: React.FC<{
                 <div className="mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
                     {children ? children : (
                         <div className="space-y-1">
-                            {items?.slice(0, 8).map(item => (
-                                <label key={item} className="flex items-center gap-2 cursor-pointer text-sm opacity-80 hover:opacity-100 transition-opacity py-1">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={selected?.includes(item)} 
-                                        onChange={() => onChange && onChange(item)}
-                                        className="rounded border-gray-300 text-sky-600 focus:ring-sky-500 accent-sky-500"
-                                    />
-                                    {item}
-                                </label>
-                            ))}
+                            {items?.slice(0, 8).map(item => {
+                                const isSelected = selected?.includes(item);
+                                return (
+                                    <button 
+                                        key={item} 
+                                        onClick={() => onChange && onChange(item)}
+                                        className={`
+                                            flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition-all
+                                            ${isSelected 
+                                                ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 font-bold border border-sky-200 dark:border-sky-800' 
+                                                : 'opacity-80 hover:opacity-100 hover:bg-gray-50 dark:hover:bg-zinc-800/50'}
+                                        `}
+                                    >
+                                        {item}
+                                        {isSelected && <Check size={14} className="text-sky-500"/>}
+                                    </button>
+                                );
+                            })}
                             {linkTo && (
                                 <Link 
                                     to={linkTo} 
-                                    className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-600 font-medium mt-3 ml-6"
+                                    className={`
+                                        flex items-center justify-center gap-2 text-xs font-bold mt-4 py-2 px-4 rounded-lg w-full transition-all
+                                        ${isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-sky-50 hover:bg-sky-100 text-sky-600'}
+                                    `}
                                 >
-                                    View all {title} <ArrowRight size={10} />
+                                    View all {title} <ArrowRight size={12} />
                                 </Link>
                             )}
                         </div>
