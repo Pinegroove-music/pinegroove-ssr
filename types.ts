@@ -10,15 +10,15 @@ export interface MusicTrack {
   bpm: number | null;
   iswc: string | null;
   isrc: string | null;
-  genre: string[] | null; // stored as jsonb
-  mood: string[] | null; // RENAMED from 'moods' to 'mood' to match DB
-  tags: string[] | null; // stored as jsonb
+  genre: string[] | string | null; // stored as jsonb
+  mood: string[] | string | null; // RENAMED from 'moods' to 'mood' to match DB
+  tags: string[] | string | null; // stored as jsonb
   credits: Record<string, any> | null; // stored as jsonb
-  season: string | null;
+  season: string[] | string | null; // Can be array or string
   duration: number | null;
   year: number | null;
   lyrics: string | null;
-  media_theme: string[] | null; // stored as jsonb
+  media_theme: string[] | string | null; // stored as jsonb
 }
 
 export interface Client {

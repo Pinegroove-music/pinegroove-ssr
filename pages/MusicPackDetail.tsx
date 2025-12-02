@@ -188,9 +188,13 @@ export const MusicPackDetail: React.FC = () => {
                             </div>
 
                             <div className="hidden md:flex gap-2">
-                                {track.genre?.slice(0,2).map(g => (
-                                    <span key={g} className="text-[10px] px-2 py-1 rounded-md bg-zinc-200 dark:bg-zinc-800 opacity-70 font-medium uppercase tracking-wide">{g}</span>
-                                ))}
+                                {Array.isArray(track.genre) ? (
+                                    track.genre.slice(0, 2).map((g) => (
+                                        <span key={g} className="text-[10px] px-2 py-1 rounded-md bg-zinc-200 dark:bg-zinc-800 opacity-70 font-medium uppercase tracking-wide">{g}</span>
+                                    ))
+                                ) : track.genre ? (
+                                    <span className="text-[10px] px-2 py-1 rounded-md bg-zinc-200 dark:bg-zinc-800 opacity-70 font-medium uppercase tracking-wide">{track.genre}</span>
+                                ) : null}
                             </div>
 
                             <div className="w-16 text-right font-mono text-sm opacity-50">

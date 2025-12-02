@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { MusicTrack } from '../types';
 import { useStore } from '../store/useStore';
-import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 
@@ -55,8 +55,29 @@ export const Library: React.FC = () => {
     } else if (data) {
         let filteredData = data as MusicTrack[];
 
-        // 2. Apply Filters in Memory
+        // 2. Apply Filters in Memory with ROBUST LOGIC
         
+        // Helper for normalization (lowercase, trim)
+        const normalize = (val: any) => String(val).toLowerCase().trim();
+
+        // Helper function to check if track attribute matches selected filters
+        const checkFilterMatch = (trackAttribute: string[] | string | null | undefined, selectedFilters: string[]) => {
+            if (!trackAttribute) return false;
+            
+            const normalizedFilters = selectedFilters.map(normalize);
+            
+            if (Array.isArray(trackAttribute)) {
+                // Return true if ANY of the track's attributes match ANY of the selected filters
+                return trackAttribute.some(attr => normalizedFilters.includes(normalize(attr)));
+            }
+            
+            if (typeof trackAttribute === 'string') {
+                return normalizedFilters.includes(normalize(trackAttribute));
+            }
+            
+            return false;
+        };
+
         // Search Term
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
@@ -78,28 +99,17 @@ export const Library: React.FC = () => {
 
         // Genre Filter
         if (selectedGenres.length > 0) {
-            filteredData = filteredData.filter(track => {
-                const trackGenres = Array.isArray(track.genre) ? track.genre : [];
-                return trackGenres.some(g => selectedGenres.includes(g));
-            });
+            filteredData = filteredData.filter(track => checkFilterMatch(track.genre, selectedGenres));
         }
 
         // Mood Filter
         if (selectedMoods.length > 0) {
-            filteredData = filteredData.filter(track => {
-                const trackMoods = Array.isArray(track.mood) ? track.mood : [];
-                return trackMoods.some(m => selectedMoods.includes(m));
-            });
+            filteredData = filteredData.filter(track => checkFilterMatch(track.mood, selectedMoods));
         }
 
         // Seasonal Filter
         if (selectedSeasons.length > 0) {
-            filteredData = filteredData.filter(track => {
-                if (Array.isArray(track.season)) {
-                    return track.season.some(s => selectedSeasons.includes(s));
-                }
-                return track.season && selectedSeasons.includes(track.season);
-            });
+            filteredData = filteredData.filter(track => checkFilterMatch(track.season, selectedSeasons));
         }
 
         // BPM Filter
@@ -124,6 +134,24 @@ export const Library: React.FC = () => {
     } else {
       setList([...list, item]);
     }
+  };
+
+  // Function to quickly filter by similar tracks (based on primary genre)
+  const findSimilar = (track: MusicTrack) => {
+      // Logic: Pick the first genre and set it as the active filter
+      if (Array.isArray(track.genre) && track.genre.length > 0) {
+          const genre = track.genre[0];
+          // Clear other filters to focus on this
+          clearAllFilters();
+          // Set new filter
+          setSelectedGenres([genre]);
+          // Scroll top
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (typeof track.genre === 'string') {
+          clearAllFilters();
+          setSelectedGenres([track.genre]);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
   };
 
   const clearAllFilters = () => {
@@ -271,7 +299,7 @@ export const Library: React.FC = () => {
           <>
             <div className="flex flex-col gap-3">
                 {currentTracks.map(track => (
-                <TrackItem key={track.id} track={track} />
+                <TrackItem key={track.id} track={track} onFindSimilar={() => findSimilar(track)} />
                 ))}
             </div>
 
@@ -397,7 +425,7 @@ const CollapsibleFilterSection: React.FC<{
     );
 };
 
-const TrackItem: React.FC<{ track: MusicTrack }> = ({ track }) => {
+const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = ({ track, onFindSimilar }) => {
     const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
     const isCurrent = currentTrack?.id === track.id;
     const active = isCurrent && isPlaying;
@@ -431,9 +459,11 @@ const TrackItem: React.FC<{ track: MusicTrack }> = ({ track }) => {
                     )}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1">
-                    {track.genre?.slice(0, 1).map(g => (
+                    {Array.isArray(track.genre) ? track.genre.slice(0, 1).map(g => (
                         <span key={g} className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300">{g}</span>
-                    ))}
+                    )) : track.genre ? (
+                        <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300">{track.genre}</span>
+                    ) : null}
                 </div>
             </div>
 
@@ -449,6 +479,15 @@ const TrackItem: React.FC<{ track: MusicTrack }> = ({ track }) => {
                     {track.bpm && <div>{track.bpm} BPM</div>}
                 </div>
                 
+                {/* Find Similar Button */}
+                <button 
+                    onClick={onFindSimilar}
+                    className="p-2 rounded-full hover:bg-sky-100 dark:hover:bg-zinc-700 text-sky-500 transition-colors"
+                    title="Find similar tracks"
+                >
+                    <Sparkles size={18} />
+                </button>
+
                 <a 
                     href={track.gumroad_link || '#'} 
                     className="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-full shadow-lg hover:shadow-xl transition-all flex-shrink-0"
