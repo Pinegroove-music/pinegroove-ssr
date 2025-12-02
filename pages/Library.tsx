@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { MusicTrack } from '../types';
 import { useStore } from '../store/useStore';
-import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles, Check, Trash2 } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles, Check, Trash2, LayoutGrid, List } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 
@@ -12,6 +12,9 @@ export const Library: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDarkMode } = useStore();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // View Mode State ('list' or 'grid')
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -197,7 +200,8 @@ export const Library: React.FC = () => {
   const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedSeasons.length > 0 || bpmRange;
 
   return (
-    <div className="flex flex-col lg:flex-row relative">
+    <div className="flex flex-col lg:flex-row relative items-start"> 
+    {/* Added items-start to keep sidebar top-aligned */}
       
       {/* Mobile Filter Toggle */}
       <button 
@@ -207,9 +211,10 @@ export const Library: React.FC = () => {
         <Filter size={20}/> Filters
       </button>
 
-      {/* Sidebar Filters */}
+      {/* Sidebar Filters - FIXED/STICKY */}
       <div className={`
         lg:w-72 flex-shrink-0 p-6 border-r 
+        lg:sticky lg:top-0 lg:h-[calc(100vh-80px)] lg:overflow-y-auto no-scrollbar
         ${mobileFiltersOpen ? 'block' : 'hidden lg:block'}
         ${isDarkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-100 bg-white'}
       `}>
@@ -298,12 +303,34 @@ export const Library: React.FC = () => {
         )}
       </div>
 
-      {/* Track List */}
-      <div className="flex-1 p-4 lg:p-8">
-        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-            Library 
-            {tracks.length > 0 && <span className="text-sm font-normal opacity-50 bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full">{tracks.length} Tracks</span>}
-        </h2>
+      {/* Main Content Area */}
+      <div className="flex-1 p-4 lg:p-8 min-w-0">
+        
+        {/* Header with View Toggle */}
+        <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold flex items-center gap-3">
+                Library 
+                {tracks.length > 0 && <span className="text-sm font-normal opacity-50 bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full">{tracks.length} Tracks</span>}
+            </h2>
+
+            {/* View Mode Toggle */}
+            <div className={`flex items-center gap-1 p-1 rounded-lg border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                <button 
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-all ${viewMode === 'list' ? (isDarkMode ? 'bg-zinc-800 text-white' : 'bg-gray-100 text-black') : 'opacity-50 hover:opacity-100'}`}
+                    title="List View"
+                >
+                    <List size={20} />
+                </button>
+                <button 
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? (isDarkMode ? 'bg-zinc-800 text-white' : 'bg-gray-100 text-black') : 'opacity-50 hover:opacity-100'}`}
+                    title="Grid View"
+                >
+                    <LayoutGrid size={20} />
+                </button>
+            </div>
+        </div>
         
         {loading ? (
           <div className="text-center py-20 opacity-50">Loading tracks...</div>
@@ -313,11 +340,20 @@ export const Library: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="flex flex-col gap-3">
-                {currentTracks.map(track => (
-                <TrackItem key={track.id} track={track} onFindSimilar={() => findSimilar(track)} />
-                ))}
-            </div>
+            {/* Render List or Grid */}
+            {viewMode === 'list' ? (
+                <div className="flex flex-col gap-3">
+                    {currentTracks.map(track => (
+                    <TrackItem key={track.id} track={track} onFindSimilar={() => findSimilar(track)} />
+                    ))}
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    {currentTracks.map(track => (
+                    <TrackGridItem key={track.id} track={track} onFindSimilar={() => findSimilar(track)} />
+                    ))}
+                </div>
+            )}
 
             {/* Pagination Controls - Added large bottom margin (pb-40) to ensure visibility above fixed player */}
             {totalPages > 1 && (
@@ -375,7 +411,8 @@ export const Library: React.FC = () => {
   );
 };
 
-// Helper Component for Active Filters
+// ... (ActiveFilterBadge, CollapsibleFilterSection remain unchanged) ...
+
 const ActiveFilterBadge: React.FC<{ label: string, onRemove: () => void, isDark: boolean }> = ({ label, onRemove, isDark }) => (
     <span className={`
         inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border shadow-sm
@@ -388,7 +425,6 @@ const ActiveFilterBadge: React.FC<{ label: string, onRemove: () => void, isDark:
     </span>
 );
 
-// Collapsible Filter Component (UPDATED: Clickable Text instead of Checkbox)
 const CollapsibleFilterSection: React.FC<{ 
     title: string, 
     items?: string[], 
@@ -421,7 +457,7 @@ const CollapsibleFilterSection: React.FC<{
                                         key={item} 
                                         onClick={() => onChange && onChange(item)}
                                         className={`
-                                            flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition-all
+                                            flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition-all mb-1
                                             ${isSelected 
                                                 ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 font-bold border border-sky-200 dark:border-sky-800' 
                                                 : 'opacity-80 hover:opacity-100 hover:bg-gray-50 dark:hover:bg-zinc-800/50'}
@@ -433,15 +469,17 @@ const CollapsibleFilterSection: React.FC<{
                                 );
                             })}
                             {linkTo && (
-                                <Link 
-                                    to={linkTo} 
-                                    className={`
-                                        flex items-center justify-center gap-2 text-xs font-bold mt-4 py-2 px-4 rounded-lg w-full transition-all
-                                        ${isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-sky-50 hover:bg-sky-100 text-sky-600'}
-                                    `}
-                                >
-                                    View all {title} <ArrowRight size={12} />
-                                </Link>
+                                <div className="mt-3 flex justify-end">
+                                    <Link 
+                                        to={linkTo} 
+                                        className={`
+                                            text-xs font-bold py-2 px-4 rounded-lg transition-all flex items-center gap-1
+                                            ${isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300' : 'bg-sky-50 text-sky-600 hover:bg-sky-100'}
+                                        `}
+                                    >
+                                        View all <ArrowRight size={12} />
+                                    </Link>
+                                </div>
                             )}
                         </div>
                     )}
@@ -451,6 +489,7 @@ const CollapsibleFilterSection: React.FC<{
     );
 };
 
+// Track Item for LIST View (Existing)
 const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = ({ track, onFindSimilar }) => {
     const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
     const isCurrent = currentTrack?.id === track.id;
@@ -473,7 +512,7 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </div>
             </div>
 
-            {/* Info - Flexible on mobile to push cart, Fixed on Desktop to allow waveform */}
+            {/* Info */}
             <div className="flex-1 md:flex-none md:w-60 min-w-0">
                 <Link to={`/track/${track.id}`} className="font-bold text-base hover:text-sky-500 transition-colors block truncate">{track.title}</Link>
                 <div className="flex items-center gap-2">
@@ -493,7 +532,7 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </div>
             </div>
 
-            {/* Waveform Visualization - Takes remaining space */}
+            {/* Waveform */}
             <div className="hidden md:flex flex-1 h-12 items-center px-2">
                 <WaveformVisualizer track={track} height="h-10" barCount={150} />
             </div>
@@ -505,7 +544,6 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                     {track.bpm && <div>{track.bpm} BPM</div>}
                 </div>
                 
-                {/* Find Similar Button */}
                 <button 
                     onClick={onFindSimilar}
                     className="p-2 rounded-full hover:bg-sky-100 dark:hover:bg-zinc-700 text-sky-500 transition-colors"
@@ -523,5 +561,70 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </a>
             </div>
         </div>
-    )
-}
+    );
+};
+
+// Track Item for GRID View (New)
+const TrackGridItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = ({ track, onFindSimilar }) => {
+    const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
+    const isCurrent = currentTrack?.id === track.id;
+    const active = isCurrent && isPlaying;
+
+    return (
+        <div className="group flex flex-col text-center">
+            {/* Cover Image & Play Button */}
+            <div 
+                className="relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-md mb-3" 
+                onClick={() => playTrack(track)}
+            >
+                <img 
+                    src={track.cover_url} 
+                    alt={track.title} 
+                    className="w-full h-full object-cover transition duration-500 group-hover:scale-110" 
+                />
+                {/* Overlay with actions showing on hover */}
+                <div className={`absolute inset-0 bg-black/40 flex flex-col items-center justify-center transition-opacity ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    
+                    {/* Play/Pause in Center */}
+                    {active ? <Pause size={40} className="text-white mb-2" /> : <Play size={40} className="text-white ml-1 mb-2" />}
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 mt-2" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                            onClick={onFindSimilar}
+                            className="p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white hover:text-black text-white transition-colors"
+                            title="Find Similar"
+                        >
+                            <Sparkles size={16} />
+                        </button>
+                        <a 
+                            href={track.gumroad_link || '#'} 
+                            className="p-2 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-colors"
+                            title="Buy License"
+                        >
+                            <ShoppingCart size={16} />
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Track Info */}
+            <div className="px-1">
+                <Link 
+                    to={`/track/${track.id}`} 
+                    className="font-bold text-sm truncate block hover:text-sky-500 transition-colors"
+                    title={track.title}
+                >
+                    {track.title}
+                </Link>
+                <Link 
+                    to={`/library?search=${encodeURIComponent(track.artist_name)}`} 
+                    className="text-xs opacity-70 truncate block hover:underline transition-colors"
+                    title={track.artist_name}
+                >
+                    {track.artist_name}
+                </Link>
+            </div>
+        </div>
+    );
+};

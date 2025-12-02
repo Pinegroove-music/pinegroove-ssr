@@ -12,7 +12,7 @@ const formatTime = (time: number) => {
 };
 
 export const Player: React.FC = () => {
-  const { currentTrack, isPlaying, togglePlay, isDarkMode, setProgress, volume, setVolume } = useStore();
+  const { currentTrack, isPlaying, togglePlay, isDarkMode, setProgress, volume, setVolume, seekTime, setSeekTime } = useStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -40,18 +40,28 @@ export const Player: React.FC = () => {
     }
   }, [volume]);
 
+  // Handle Remote Seek Requests
+  useEffect(() => {
+      if (seekTime !== null && audioRef.current && audioRef.current.duration) {
+          const newTime = (seekTime / 100) * audioRef.current.duration;
+          if (Number.isFinite(newTime)) {
+              audioRef.current.currentTime = newTime;
+              setCurrentTime(newTime);
+          }
+          setSeekTime(null);
+      }
+  }, [seekTime, setSeekTime]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const updateProgress = () => {
       if (audio.duration && Number.isFinite(audio.duration)) {
-        // Update local time states for the UI timers
         setCurrentTime(audio.currentTime);
         setDuration(audio.duration);
 
-        // Update global progress bar (store) if not dragging
-        if (!isDragging) {
+        if (seekTime === null) {
             const p = (audio.currentTime / audio.duration) * 100;
             setProgress(p);
         }
@@ -72,7 +82,7 @@ export const Player: React.FC = () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [isDragging, setProgress, currentTrack]);
+  }, [setProgress, currentTrack, seekTime]);
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
@@ -110,6 +120,7 @@ export const Player: React.FC = () => {
         ref={audioRef} 
         src={currentTrack.mp3_url} 
         preload="metadata"
+        crossOrigin="anonymous"
       />
 
       {/* 1. Track Info (Left) */}
@@ -131,7 +142,6 @@ export const Player: React.FC = () => {
 
       {/* 2. Main Controls: Play + Waveform + Timers (Center) */}
       <div className="flex-1 flex items-center gap-4 min-w-0 justify-center">
-          {/* Play Button */}
           <button 
             onClick={togglePlay}
             className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition hover:scale-105 shadow-sm ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
@@ -139,9 +149,7 @@ export const Player: React.FC = () => {
             {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1"/>}
           </button>
 
-          {/* Waveform Area with Timers */}
           <div className="flex-1 flex items-center gap-3">
-              {/* Current Time */}
               <span className="text-xs font-mono opacity-50 min-w-[35px] text-right">
                   {formatTime(currentTime)}
               </span>
@@ -149,7 +157,12 @@ export const Player: React.FC = () => {
               {/* Interactive Waveform */}
               <div className="relative flex-1 h-12 flex items-center group">
                     <div className="absolute inset-0 z-0 flex items-center">
-                        <WaveformVisualizer track={currentTrack} height="h-full" interactive={true} />
+                        <WaveformVisualizer 
+                            track={currentTrack} 
+                            height="h-full" 
+                            interactive={true} 
+                            enableAnalysis={true} // Explicitly enable real analysis
+                        />
                     </div>
                     
                     {/* Invisible Overlay for Seek */}
@@ -169,7 +182,6 @@ export const Player: React.FC = () => {
                     />
               </div>
 
-              {/* Remaining Time */}
               <span className="text-xs font-mono opacity-50 min-w-[40px]">
                   -{formatTime(remainingTime)}
               </span>
@@ -178,13 +190,10 @@ export const Player: React.FC = () => {
 
       {/* 3. Volume & License (Right) */}
       <div className="flex items-center gap-4 flex-shrink-0">
-        
-        {/* Compact Volume Control */}
         <div className="flex items-center gap-2 group relative">
             <button onClick={toggleMute} className="opacity-60 hover:opacity-100 transition p-2">
                 <VolumeIcon size={20} />
             </button>
-            {/* Show slider on hover */}
             <div className="w-0 overflow-hidden group-hover:w-20 transition-all duration-300 ease-in-out">
                 <input
                     type="range"
