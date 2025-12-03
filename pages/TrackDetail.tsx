@@ -131,7 +131,13 @@ export const TrackDetail: React.FC = () => {
 
                     {/* Waveform takes remaining space */}
                     <div className="flex-1 h-full flex items-center">
-                        <WaveformVisualizer track={track} height="h-20" barCount={200} />
+                        <WaveformVisualizer 
+                            track={track} 
+                            height="h-20" 
+                            barCount={200} 
+                            enableAnalysis={true} 
+                            interactive={true}
+                        />
                     </div>
                 </div>
 

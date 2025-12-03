@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { MusicTrack } from '../types';
 import { useStore } from '../store/useStore';
-import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles, Check, Trash2 } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles, Check, Trash2, LayoutList, LayoutGrid } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 
@@ -12,10 +12,13 @@ export const Library: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isDarkMode } = useStore();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  
+  // View Mode State: 'list' or 'grid'
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25;
+  const itemsPerPage = 25; // Same limit for both views
 
   // Filters State
   const initialSearch = searchParams.get('search') || '';
@@ -46,7 +49,7 @@ export const Library: React.FC = () => {
   const fetchTracks = async () => {
     setLoading(true);
     
-    // 1. Fetch raw data (Limit increased to allow client-side pagination over a larger set)
+    // 1. Fetch raw data
     const { data, error } = await supabase.from('music_tracks').select('*').limit(1000);
     
     if (error) {
@@ -56,32 +59,22 @@ export const Library: React.FC = () => {
         let filteredData = data as MusicTrack[];
 
         // 2. Apply Filters in Memory with ROBUST LOGIC
-        
-        // Helper for normalization (lowercase, trim)
         const normalize = (val: any) => String(val).toLowerCase().trim();
 
-        // Helper function to check if track attribute matches selected filters
         const checkFilterMatch = (trackAttribute: string[] | string | null | undefined, selectedFilters: string[]) => {
             if (!trackAttribute) return false;
-            
             const normalizedFilters = selectedFilters.map(normalize);
-            
             if (Array.isArray(trackAttribute)) {
-                // Return true if ANY of the track's attributes match ANY of the selected filters
                 return trackAttribute.some(attr => normalizedFilters.includes(normalize(attr)));
             }
-            
             if (typeof trackAttribute === 'string') {
                 return normalizedFilters.includes(normalize(trackAttribute));
             }
-            
             return false;
         };
 
-        // Search Term (supports multiple keywords separated by space)
         if (searchTerm) {
             const terms = searchTerm.toLowerCase().split(/\s+/).filter(t => t.length > 0);
-            
             filteredData = filteredData.filter(track => {
                 const trackString = [
                     track.title,
@@ -92,28 +85,13 @@ export const Library: React.FC = () => {
                     JSON.stringify(track.mood),
                     JSON.stringify(track.media_theme)
                 ].join(' ').toLowerCase();
-
-                // OR logic: Return true if ANY of the search terms is found in the track
                 return terms.some(t => trackString.includes(t));
             });
         }
 
-        // Genre Filter
-        if (selectedGenres.length > 0) {
-            filteredData = filteredData.filter(track => checkFilterMatch(track.genre, selectedGenres));
-        }
-
-        // Mood Filter
-        if (selectedMoods.length > 0) {
-            filteredData = filteredData.filter(track => checkFilterMatch(track.mood, selectedMoods));
-        }
-
-        // Seasonal Filter
-        if (selectedSeasons.length > 0) {
-            filteredData = filteredData.filter(track => checkFilterMatch(track.season, selectedSeasons));
-        }
-
-        // BPM Filter
+        if (selectedGenres.length > 0) filteredData = filteredData.filter(track => checkFilterMatch(track.genre, selectedGenres));
+        if (selectedMoods.length > 0) filteredData = filteredData.filter(track => checkFilterMatch(track.mood, selectedMoods));
+        if (selectedSeasons.length > 0) filteredData = filteredData.filter(track => checkFilterMatch(track.season, selectedSeasons));
         if (bpmRange) {
             filteredData = filteredData.filter(track => {
                 if (!track.bpm) return false;
@@ -137,33 +115,36 @@ export const Library: React.FC = () => {
     }
   };
 
-  // Function to filter by similar tracks based on Genres and Moods
   const findSimilar = (track: MusicTrack) => {
-      // Extract up to 2 genres
+      // Clear existing filters
+      setSearchTerm('');
+      setSelectedSeasons([]);
+      setBpmRange(null);
+      setSearchParams({});
+
+      // 1. Extract and set Genres (Max 3)
       let newGenres: string[] = [];
       if (Array.isArray(track.genre)) {
-          newGenres = track.genre.slice(0, 2);
-      } else if (typeof track.genre === 'string') {
+          newGenres = track.genre.slice(0, 3);
+      } else if (typeof track.genre === 'string' && track.genre) {
           newGenres = [track.genre];
       }
+      setSelectedGenres(newGenres);
 
-      // Extract up to 2 moods
+      // 2. Extract and set Moods (Max 3)
       let newMoods: string[] = [];
       if (Array.isArray(track.mood)) {
-          newMoods = track.mood.slice(0, 2);
-      } else if (typeof track.mood === 'string') {
+          newMoods = track.mood.slice(0, 3);
+      } else if (typeof track.mood === 'string' && track.mood) {
           newMoods = [track.mood];
       }
+      setSelectedMoods(newMoods);
 
-      // Apply filters if we found anything
-      if (newGenres.length > 0 || newMoods.length > 0) {
-          clearAllFilters(); // Reset everything first
-          
-          // Set specific filters so they appear as removable badges
-          if (newGenres.length > 0) setSelectedGenres(newGenres);
-          if (newMoods.length > 0) setSelectedMoods(newMoods);
-          
-          // Scroll top
+      // Scroll top
+      const mainContainer = document.querySelector('main');
+      if (mainContainer) {
+          mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
           window.scrollTo({ top: 0, behavior: 'smooth' });
       }
   };
@@ -174,10 +155,9 @@ export const Library: React.FC = () => {
       setSelectedMoods([]);
       setSelectedSeasons([]);
       setBpmRange(null);
-      setSearchParams({}); // Clear URL params
+      setSearchParams({}); 
   };
 
-  // Pagination Calculations
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentTracks = tracks.slice(indexOfFirstItem, indexOfLastItem);
@@ -185,7 +165,6 @@ export const Library: React.FC = () => {
 
   const paginate = (pageNumber: number) => {
       setCurrentPage(pageNumber);
-      // Scroll the main content container to top
       const mainContainer = document.querySelector('main');
       if (mainContainer) {
           mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
@@ -242,14 +221,14 @@ export const Library: React.FC = () => {
                         key={range} 
                         onClick={() => setBpmRange(bpmRange === range ? null : range as any)}
                         className={`
-                            flex items-center justify-between w-full text-left px-3 py-2 rounded-lg text-sm transition-all mb-1
+                            flex items-center justify-between w-full text-left px-4 py-2.5 rounded-full text-sm font-medium transition-all mb-1
                             ${bpmRange === range 
-                                ? 'bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 font-bold border border-sky-200 dark:border-sky-800' 
-                                : 'opacity-80 hover:opacity-100 hover:bg-gray-50 dark:hover:bg-zinc-800/50'}
+                                ? 'bg-sky-500 text-white shadow-md transform scale-105' 
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
                         `}
                     >
                         <span className="capitalize">{range}</span>
-                        {bpmRange === range && <Check size={14} />}
+                        {bpmRange === range && <Check size={14} className="text-white"/>}
                     </button>
                 ))}
             </div>
@@ -264,7 +243,7 @@ export const Library: React.FC = () => {
             isDark={isDarkMode}
         />
 
-        {/* Active Filters Section (Redesigned) */}
+        {/* Active Filters Section */}
         {hasActiveFilters && (
             <div className={`mt-8 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${isDarkMode ? 'border-zinc-800 bg-black/20' : 'border-zinc-200 bg-zinc-50'}`}>
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-dashed border-gray-300 dark:border-zinc-700">
@@ -298,12 +277,33 @@ export const Library: React.FC = () => {
         )}
       </div>
 
-      {/* Track List */}
+      {/* Main Content */}
       <div className="flex-1 p-4 lg:p-8">
-        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-            Library 
-            {tracks.length > 0 && <span className="text-sm font-normal opacity-50 bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full">{tracks.length} Tracks</span>}
-        </h2>
+        {/* Header with View Switcher */}
+        <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+                 <h2 className="text-3xl font-bold">Library</h2>
+                 {tracks.length > 0 && <span className="text-sm font-normal opacity-50 bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full">{tracks.length} Tracks</span>}
+            </div>
+
+            {/* View Mode Switch */}
+            <div className={`flex items-center p-1 rounded-lg border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                <button 
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400' : 'opacity-50 hover:opacity-100'}`}
+                    title="List View"
+                >
+                    <LayoutList size={18} />
+                </button>
+                <button 
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400' : 'opacity-50 hover:opacity-100'}`}
+                    title="Grid View"
+                >
+                    <LayoutGrid size={18} />
+                </button>
+            </div>
+        </div>
         
         {loading ? (
           <div className="text-center py-20 opacity-50">Loading tracks...</div>
@@ -313,13 +313,22 @@ export const Library: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="flex flex-col gap-3">
-                {currentTracks.map(track => (
-                <TrackItem key={track.id} track={track} onFindSimilar={() => findSimilar(track)} />
-                ))}
-            </div>
+            {/* Content Area: List or Grid */}
+            {viewMode === 'list' ? (
+                <div className="flex flex-col gap-3">
+                    {currentTracks.map(track => (
+                    <TrackItem key={track.id} track={track} onFindSimilar={() => findSimilar(track)} />
+                    ))}
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    {currentTracks.map(track => (
+                    <TrackGridItem key={track.id} track={track} onFindSimilar={() => findSimilar(track)} />
+                    ))}
+                </div>
+            )}
 
-            {/* Pagination Controls - Added large bottom margin (pb-40) to ensure visibility above fixed player */}
+            {/* Pagination Controls */}
             {totalPages > 1 && (
                 <div className="mt-12 pb-40 flex justify-center items-center gap-2">
                     <button 
@@ -375,7 +384,7 @@ export const Library: React.FC = () => {
   );
 };
 
-// Helper Component for Active Filters
+// ... (ActiveFilterBadge and CollapsibleFilterSection remain unchanged) ...
 const ActiveFilterBadge: React.FC<{ label: string, onRemove: () => void, isDark: boolean }> = ({ label, onRemove, isDark }) => (
     <span className={`
         inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border shadow-sm
@@ -388,7 +397,6 @@ const ActiveFilterBadge: React.FC<{ label: string, onRemove: () => void, isDark:
     </span>
 );
 
-// Collapsible Filter Component (UPDATED: Clickable Text instead of Checkbox)
 const CollapsibleFilterSection: React.FC<{ 
     title: string, 
     items?: string[], 
@@ -451,6 +459,7 @@ const CollapsibleFilterSection: React.FC<{
     );
 };
 
+// Standard List Item
 const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = ({ track, onFindSimilar }) => {
     const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
     const isCurrent = currentTrack?.id === track.id;
@@ -473,7 +482,7 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </div>
             </div>
 
-            {/* Info - Flexible on mobile to push cart, Fixed on Desktop to allow waveform */}
+            {/* Info */}
             <div className="flex-1 md:flex-none md:w-60 min-w-0">
                 <Link to={`/track/${track.id}`} className="font-bold text-base hover:text-sky-500 transition-colors block truncate">{track.title}</Link>
                 <div className="flex items-center gap-2">
@@ -493,7 +502,7 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </div>
             </div>
 
-            {/* Waveform Visualization - Takes remaining space */}
+            {/* Waveform */}
             <div className="hidden md:flex flex-1 h-12 items-center px-2">
                 <WaveformVisualizer track={track} height="h-10" barCount={150} />
             </div>
@@ -505,7 +514,6 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                     {track.bpm && <div>{track.bpm} BPM</div>}
                 </div>
                 
-                {/* Find Similar Button */}
                 <button 
                     onClick={onFindSimilar}
                     className="p-2 rounded-full hover:bg-sky-100 dark:hover:bg-zinc-700 text-sky-500 transition-colors"
@@ -525,3 +533,80 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
         </div>
     )
 }
+
+// Grid View Item
+const TrackGridItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = ({ track, onFindSimilar }) => {
+    const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
+    const isCurrent = currentTrack?.id === track.id;
+    const active = isCurrent && isPlaying;
+
+    return (
+        <div className={`
+            group flex flex-col rounded-xl overflow-hidden border transition-all hover:shadow-xl hover:-translate-y-1
+            ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}
+        `}>
+            {/* Cover Image Area with Overlay Actions */}
+            <div 
+                className="relative aspect-square cursor-pointer overflow-hidden group-hover:shadow-md"
+            >
+                <img 
+                    src={track.cover_url} 
+                    alt={track.title} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                />
+                
+                {/* Dark Overlay + Actions */}
+                <div className={`absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-3 transition-opacity duration-300 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    
+                    {/* Play Button (Center) */}
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); playTrack(track); }}
+                        className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
+                    >
+                        {active ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1"/>}
+                    </button>
+                    
+                    {/* Action Buttons Row (Bottom of Overlay) */}
+                    <div className="absolute bottom-4 flex gap-3">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onFindSimilar && onFindSimilar(); }}
+                            className="p-2 rounded-full bg-black/50 text-white hover:bg-sky-500 backdrop-blur-md transition-colors"
+                            title="Find similar tracks"
+                        >
+                            <Sparkles size={16} />
+                        </button>
+                        
+                        <a 
+                            href={track.gumroad_link || '#'} 
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-full bg-black/50 text-white hover:bg-sky-500 backdrop-blur-md transition-colors"
+                            title="Buy License"
+                        >
+                            <ShoppingCart size={16} />
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {/* Simplified Content (Centered, No Footer) */}
+            <div className="p-4 text-center">
+                <Link to={`/track/${track.id}`} className="font-bold text-sm truncate block hover:text-sky-500 transition-colors mb-1" title={track.title}>
+                    {track.title}
+                </Link>
+                {/* Updated Artist Link: Blue hover, no underline */}
+                <Link 
+                    to={`/library?search=${encodeURIComponent(track.artist_name)}`} 
+                    className="text-xs opacity-60 truncate block transition-colors hover:text-sky-500"
+                >
+                    {track.artist_name}
+                </Link>
+                
+                {track.lyrics && (
+                    <div className="mt-1 flex justify-center" title="Has Lyrics">
+                         <Mic2 size={10} className="text-sky-500 opacity-60" />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
