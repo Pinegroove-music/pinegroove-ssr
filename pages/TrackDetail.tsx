@@ -26,7 +26,6 @@ export const TrackDetail: React.FC = () => {
             setTrack(trackData);
 
             // 2. Check if track belongs to an Album (Music Pack)
-            // We join album_tracks with album to get the details directly
             supabase
                 .from('album_tracks')
                 .select('album(*)')
@@ -49,16 +48,12 @@ export const TrackDetail: React.FC = () => {
                             let score = 0;
                             // Overlap Genres
                             if (trackData.genre && t.genre) {
-                                const intersection = Array.isArray(trackData.genre) 
-                                    ? trackData.genre.filter((g:string) => t.genre.includes(g))
-                                    : (t.genre.includes(trackData.genre) ? [trackData.genre] : []);
+                                const intersection = trackData.genre.filter((g:string) => t.genre.includes(g));
                                 score += intersection.length * 2;
                             }
                             // Overlap Moods (using 'mood' column)
                             if (trackData.mood && t.mood) {
-                                const intersection = Array.isArray(trackData.mood)
-                                    ? trackData.mood.filter((m:string) => t.mood.includes(m))
-                                    : (t.mood.includes(trackData.mood) ? [trackData.mood] : []);
+                                const intersection = trackData.mood.filter((m:string) => t.mood.includes(m));
                                 score += intersection.length;
                             }
                             return { track: t, score };
@@ -108,12 +103,7 @@ export const TrackDetail: React.FC = () => {
             {/* Info Header */}
             <div className="flex-1 flex flex-col justify-center w-full">
                 <div className="flex items-center gap-4 mb-2 opacity-70 text-sm font-bold uppercase tracking-wider">
-                    {Array.isArray(track.genre) && track.genre.length > 0 && (
-                        <span className="bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300 px-2 py-1 rounded">{track.genre[0]}</span>
-                    )}
-                    {typeof track.genre === 'string' && (
-                         <span className="bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300 px-2 py-1 rounded">{track.genre}</span>
-                    )}
+                    <span className="bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300 px-2 py-1 rounded">{track.genre?.[0]}</span>
                     {track.bpm && <span className="flex items-center gap-1"><Music2 size={14}/> {track.bpm} BPM</span>}
                 </div>
                 
@@ -141,13 +131,7 @@ export const TrackDetail: React.FC = () => {
 
                     {/* Waveform takes remaining space */}
                     <div className="flex-1 h-full flex items-center">
-                        <WaveformVisualizer 
-                            track={track} 
-                            height="h-20" 
-                            barCount={200} 
-                            enableAnalysis={true} 
-                            interactive={active}
-                        />
+                        <WaveformVisualizer track={track} height="h-20" barCount={200} />
                     </div>
                 </div>
 

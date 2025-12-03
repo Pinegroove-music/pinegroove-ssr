@@ -7,10 +7,13 @@ interface AppState {
   isPlaying: boolean;
   volume: number;
   progress: number; // 0 to 100
+  seekTime: number | null; // For remote seeking
+  
   playTrack: (track: MusicTrack) => void;
   togglePlay: () => void;
   setVolume: (vol: number) => void;
   setProgress: (progress: number) => void;
+  setSeekTime: (time: number | null) => void;
   
   // Theme State
   isDarkMode: boolean;
@@ -22,6 +25,7 @@ export const useStore = create<AppState>((set) => ({
   isPlaying: false,
   volume: 1,
   progress: 0,
+  seekTime: null,
   
   playTrack: (track) => set((state) => {
     // If same track, just toggle
@@ -36,6 +40,7 @@ export const useStore = create<AppState>((set) => ({
   
   setVolume: (vol) => set({ volume: vol }),
   setProgress: (progress) => set({ progress }),
+  setSeekTime: (time) => set({ seekTime: time }),
 
   isDarkMode: false,
   toggleTheme: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
