@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { ShieldCheck, Youtube, Loader2, CheckCircle, AlertCircle, Plus, Trash2, Calendar } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 export const ContentId: React.FC = () => {
   const { isDarkMode } = useStore();
@@ -75,6 +76,7 @@ export const ContentId: React.FC = () => {
 
   return (
     <div className="pb-32">
+        <SEO title="Clear YouTube Claims" description="Resolve YouTube Content ID claims for your licensed Pinegroove music quickly and easily." />
         {/* Hero Header */}
         <div className="relative h-[50vh] min-h-[400px] flex items-start pt-24 justify-center overflow-hidden">
             {/* Background Image - Videomaking/YouTube theme */}

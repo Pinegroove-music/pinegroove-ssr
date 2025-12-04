@@ -1,12 +1,14 @@
 import React from 'react';
 import { Mail, Globe, ExternalLink, MapPin } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { SEO } from '../components/SEO';
 
 export const About: React.FC = () => {
   const { isDarkMode } = useStore();
 
   return (
     <div className="pb-32">
+      <SEO title="About Francesco Biondi" description="Meet Francesco Biondi, the composer and producer behind Pinegroove. Learn about his background, style, and professional experience." />
       
       {/* Hero Header with Background and Gradient Fade */}
       <div className="relative h-[60vh] min-h-[500px] flex items-start pt-32 justify-center overflow-hidden">

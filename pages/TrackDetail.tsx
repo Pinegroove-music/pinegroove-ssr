@@ -5,6 +5,7 @@ import { MusicTrack, Album } from '../types';
 import { useStore } from '../store/useStore';
 import { Play, Pause, ShoppingCart, Clock, Music2, Calendar, FileText, Package, ArrowRight, Sparkles, ChevronDown, ChevronUp, Mic2 } from 'lucide-react';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
+import { SEO } from '../components/SEO';
 
 export const TrackDetail: React.FC = () => {
   const { id } = useParams();
@@ -83,8 +84,15 @@ export const TrackDetail: React.FC = () => {
     ));
   };
 
+  const seoTitle = `${track.title} by ${track.artist_name}`;
+  const seoDescription = track.description 
+    ? track.description.substring(0, 160) 
+    : `Listen to ${track.title} by ${track.artist_name}. A high-quality royalty-free music track suitable for video and commercial projects.`;
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 pb-32">
+        <SEO title={seoTitle} description={seoDescription} image={track.cover_url} />
+
         <div className="flex flex-col md:flex-row gap-8 lg:gap-12 mb-12 items-start">
             
             {/* Cover - Fixed aspect square */}

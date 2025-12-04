@@ -6,6 +6,7 @@ import { useStore } from '../store/useStore';
 import { ShoppingCart, Disc, Play, Pause, Check, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
+import { SEO } from '../components/SEO';
 
 export const MusicPackDetail: React.FC = () => {
   const { id } = useParams();
@@ -84,8 +85,14 @@ export const MusicPackDetail: React.FC = () => {
   );
   if (!album) return <div className="p-20 text-center opacity-50">Album not found.</div>;
 
+  const seoDescription = album.description 
+    ? `Buy ${album.title} Music Pack. ${album.description.substring(0, 100)}...`
+    : `Buy ${album.title}, a premium collection of royalty free music tracks by Francesco Biondi.`;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 pb-32">
+      <SEO title={album.title} description={seoDescription} image={album.cover_url} />
+
       <Link to="/music-packs" className="inline-flex items-center gap-2 opacity-60 hover:opacity-100 mb-8 transition-opacity">
         <ArrowLeft size={16} /> Back to Music Packs
       </Link>

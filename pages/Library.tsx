@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRight, X, Mic2, ChevronLeft, Sparkles, Check, Trash2, LayoutList, LayoutGrid } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
+import { SEO } from '../components/SEO';
 
 export const Library: React.FC = () => {
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
@@ -175,8 +176,18 @@ export const Library: React.FC = () => {
 
   const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedSeasons.length > 0 || bpmRange;
 
+  // Dynamic SEO Title Generator
+  const getPageTitle = () => {
+      if (searchTerm) return `"${searchTerm}" Search Results`;
+      if (selectedGenres.length > 0) return `${selectedGenres.join(', ')} Royalty Free Music`;
+      if (selectedMoods.length > 0) return `${selectedMoods.join(', ')} Royalty Free Music`;
+      if (selectedSeasons.length > 0) return `${selectedSeasons.join(', ')} Royalty Free Music`;
+      return "Music Library";
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row relative">
+    <div className="flex flex-col lg:flex-row lg:items-start relative">
+      <SEO title={getPageTitle()} description={`Browse our library of ${tracks.length} high-quality royalty-free music tracks.`} />
       
       {/* Mobile Filter Toggle */}
       <button 
@@ -191,6 +202,7 @@ export const Library: React.FC = () => {
         lg:w-72 flex-shrink-0 p-6 border-r 
         ${mobileFiltersOpen ? 'block' : 'hidden lg:block'}
         ${isDarkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-100 bg-white'}
+        lg:sticky lg:top-0 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto no-scrollbar
       `}>
         
         <CollapsibleFilterSection 
@@ -502,9 +514,15 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </div>
             </div>
 
-            {/* Waveform */}
+            {/* Waveform - Made Interactive */}
             <div className="hidden md:flex flex-1 h-12 items-center px-2">
-                <WaveformVisualizer track={track} height="h-10" barCount={150} />
+                <WaveformVisualizer 
+                    track={track} 
+                    height="h-10" 
+                    barCount={150} 
+                    interactive={true} 
+                    enableAnalysis={active}
+                />
             </div>
 
             {/* Meta & Action */}

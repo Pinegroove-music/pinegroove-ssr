@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, ShieldCheck, Lock, Disc, Mail, Clapperboard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
+import { SEO } from '../components/SEO';
 
 export const Home: React.FC = () => {
   const [discoverTracks, setDiscoverTracks] = useState<MusicTrack[]>([]);
@@ -187,6 +188,7 @@ export const Home: React.FC = () => {
 
   return (
     <div className="space-y-16 pb-20">
+      <SEO title="Royalty Free Music for Video" />
       
       {/* Hero / Search */}
       <div className="relative py-28 px-4 text-center overflow-hidden">

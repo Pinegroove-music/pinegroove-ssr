@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
 import { Calendar, ArrowLeft, Tag, Smile } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { SEO } from '../components/SEO';
 
 export const SeasonalPage: React.FC = () => {
   const { isDarkMode } = useStore();
@@ -41,6 +42,7 @@ export const SeasonalPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 pb-32">
+        <SEO title="Seasonal Music Themes" description="Find the perfect soundtrack for Christmas, Halloween, Summer, and other seasonal holidays." />
         {/* Navigation Header */}
         <div className="flex flex-wrap items-center gap-4 mb-8 text-sm font-medium">
             <Link to="/library" className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">

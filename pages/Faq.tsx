@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { ChevronDown, ChevronUp, HelpCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SEO } from '../components/SEO';
 
 export const Faq: React.FC = () => {
     const { isDarkMode } = useStore();
@@ -106,6 +107,8 @@ export const Faq: React.FC = () => {
 
     return (
         <div className="pb-32">
+            <SEO title="Frequently Asked Questions" description="Find answers to common questions about music licensing, usage rights, and purchasing options on Pinegroove." />
+
             {/* Hero Header */}
             <div className="relative h-[50vh] min-h-[400px] flex items-start pt-24 justify-center overflow-hidden">
                 {/* Background Image - Licensing/Documents theme */}

@@ -4,6 +4,7 @@ import { Album } from '../types';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Disc, ArrowRight, AlertCircle, Tag } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 // Extend Album interface locally to include track count
 interface AlbumWithCount extends Album {
@@ -45,6 +46,7 @@ export const MusicPacks: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-12 pb-32">
+      <SEO title="Music Packs & Bundles" description="Get curated collections of high-quality music tracks at a discounted price. Perfect for game developers, video editors, and content creators." />
       <div className="flex items-center gap-3 mb-4">
         <Disc size={32} className="text-sky-500" />
         <h1 className="text-4xl font-black tracking-tight">Music Packs</h1>
