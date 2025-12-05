@@ -198,7 +198,7 @@ export const TrackDetail: React.FC = () => {
                     />
 
                     <div className="relative z-10">
-                        <h4 className="font-bold text-xl mb-3">License this track</h4>
+                        <h4 className="font-bold text-xl mb-3">License this track via Gumroad</h4>
                         <p className="opacity-80 mb-6 max-w-lg">Do you like this music? Get the official license to use it in your video projects, podcasts, or commercial works. Secure transaction via Gumroad.</p>
                         <a 
                             href={track.gumroad_link || '#'} 
@@ -268,7 +268,7 @@ export const TrackDetail: React.FC = () => {
                 )}
             </div>
 
-            {/* Sidebar (Details only now) */}
+            {/* Sidebar (Details only now + Genres) */}
             <div className="space-y-6">
                 <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-zinc-900' : 'bg-gray-50'}`}>
                     <h3 className="text-lg font-bold mb-6">Track Details</h3>
@@ -302,7 +302,7 @@ export const TrackDetail: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Tags Section (NEW) */}
+                        {/* Tags Section */}
                         {track.tags && Array.isArray(track.tags) && track.tags.length > 0 && (
                             <div className="pt-4 mt-4 border-t border-gray-200 dark:border-zinc-700">
                                 <h4 className="font-bold mb-3 text-sm uppercase tracking-wider opacity-80">Tags</h4>
@@ -314,6 +314,24 @@ export const TrackDetail: React.FC = () => {
                                             className="text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-sky-100 dark:hover:bg-sky-900/30 text-zinc-600 dark:text-zinc-400 hover:text-sky-600 dark:hover:text-sky-300 px-2.5 py-1 rounded-md transition-colors"
                                         >
                                             #{tag}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Genres Section */}
+                        {(Array.isArray(track.genre) ? track.genre : track.genre ? [track.genre] : []).length > 0 && (
+                            <div className="pt-4 mt-4 border-t border-gray-200 dark:border-zinc-700">
+                                <h4 className="font-bold mb-3 text-sm uppercase tracking-wider opacity-80">Genres</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {(Array.isArray(track.genre) ? track.genre : [track.genre as string]).map((g, i) => (
+                                        <Link 
+                                            key={i}
+                                            to={`/library?search=${encodeURIComponent(g)}`}
+                                            className="text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-sky-100 dark:hover:bg-sky-900/30 text-zinc-600 dark:text-zinc-400 hover:text-sky-600 dark:hover:text-sky-300 px-2.5 py-1 rounded-md transition-colors"
+                                        >
+                                            {g}
                                         </Link>
                                     ))}
                                 </div>
