@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
-import { Smile, ArrowLeft, Tag, Calendar } from 'lucide-react';
+import { Smile, ArrowLeft, Tag, Calendar, Music } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { SEO } from '../components/SEO';
 
@@ -54,6 +54,9 @@ export const MoodsPage: React.FC = () => {
             <div className="h-4 w-px bg-current opacity-20 hidden sm:block"></div>
             <Link to="/categories/genres" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
                 <Tag size={16} /> Browse by Genre
+            </Link>
+             <Link to="/categories/instruments" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
+                <Music size={16} /> Browse by Instrument
             </Link>
             <Link to="/categories/seasonal" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
                 <Calendar size={16} /> Browse by Season

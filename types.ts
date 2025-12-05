@@ -12,6 +12,7 @@ export interface MusicTrack {
   isrc: string | null;
   genre: string[] | string | null; // stored as jsonb
   mood: string[] | string | null; // RENAMED from 'moods' to 'mood' to match DB
+  instrument: string[] | string | null; // New field stored as jsonb
   tags: string[] | string | null; // stored as jsonb
   credits: Record<string, any> | null; // stored as jsonb
   season: string[] | string | null; // Can be array or string
@@ -48,6 +49,7 @@ export interface MediaTheme {
 export interface FilterState {
   genres: string[];
   moods: string[];
+  instruments: string[];
   seasons: string[];
   mediaThemes: string[];
   bpmRange: 'slow' | 'medium' | 'fast' | null;

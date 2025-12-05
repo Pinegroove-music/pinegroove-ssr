@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
-import { Calendar, ArrowLeft, Tag, Smile } from 'lucide-react';
+import { Calendar, ArrowLeft, Tag, Smile, Music } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { SEO } from '../components/SEO';
 
@@ -54,6 +54,9 @@ export const SeasonalPage: React.FC = () => {
             </Link>
             <Link to="/categories/moods" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
                 <Smile size={16} /> Browse by Mood
+            </Link>
+            <Link to="/categories/instruments" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
+                <Music size={16} /> Browse by Instrument
             </Link>
         </div>
 

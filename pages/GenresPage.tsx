@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
-import { Tag, ArrowLeft, Smile, Calendar } from 'lucide-react';
+import { Tag, ArrowLeft, Smile, Calendar, Music } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { SEO } from '../components/SEO';
 
 export const GenresPage: React.FC = () => {
   const { isDarkMode } = useStore();
@@ -44,6 +45,7 @@ export const GenresPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 pb-32">
+        <SEO title="Browse Music by Genre" description="Explore our catalog by musical genre. Cinematic, Corporate, Rock, Pop, and more." />
         {/* Navigation Header */}
         <div className="flex flex-wrap items-center gap-4 mb-8 text-sm font-medium">
             <Link to="/library" className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
@@ -52,6 +54,9 @@ export const GenresPage: React.FC = () => {
             <div className="h-4 w-px bg-current opacity-20 hidden sm:block"></div>
             <Link to="/categories/moods" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
                 <Smile size={16} /> Browse by Mood
+            </Link>
+            <Link to="/categories/instruments" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
+                <Music size={16} /> Browse by Instrument
             </Link>
             <Link to="/categories/seasonal" className="flex items-center gap-2 text-sky-500 hover:text-sky-600 hover:underline">
                 <Calendar size={16} /> Browse by Season

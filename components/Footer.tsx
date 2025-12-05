@@ -18,6 +18,7 @@ export const Footer: React.FC = () => {
   const browseLinks = [
     { label: 'Browse Genres', path: '/categories/genres' },
     { label: 'Browse Moods', path: '/categories/moods' },
+    { label: 'Browse Instruments', path: '/categories/instruments' },
     { label: 'Seasonal Themes', path: '/categories/seasonal' },
   ];
 

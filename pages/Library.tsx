@@ -26,8 +26,12 @@ export const Library: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [bpmRange, setBpmRange] = useState<'slow' | 'medium' | 'fast' | null>(null);
+
+  // Dynamic lists from DB
+  const [availableInstruments, setAvailableInstruments] = useState<string[]>([]);
 
   useEffect(() => {
       const term = searchParams.get('search') || '';
@@ -36,7 +40,7 @@ export const Library: React.FC = () => {
       }
   }, [searchParams]);
 
-  // Main Filter Categories
+  // Main Filter Categories (Static for Genres/Moods/Seasons as per previous design, instruments will be dynamic)
   const genres = ['Cinematic', 'Corporate', 'Ambient', 'Rock', 'Pop', 'Electronic', 'Acoustic', 'Folk', 'Hip Hop', 'Jazz'];
   const moods = ['Inspiring', 'Happy', 'Dark', 'Emotional', 'Dramatic', 'Peaceful', 'Energetic', 'Corporate', 'Uplifting', 'Sad'];
   const seasons = ['Spring', 'Summer', 'Autumn', 'Winter', 'Christmas', 'Halloween'];
@@ -45,7 +49,7 @@ export const Library: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1);
     fetchTracks();
-  }, [selectedGenres, selectedMoods, selectedSeasons, bpmRange, searchTerm]);
+  }, [selectedGenres, selectedMoods, selectedInstruments, selectedSeasons, bpmRange, searchTerm]);
 
   const fetchTracks = async () => {
     setLoading(true);
@@ -58,6 +62,34 @@ export const Library: React.FC = () => {
         setTracks([]);
     } else if (data) {
         let filteredData = data as MusicTrack[];
+
+        // Extract unique instruments from ALL fetched data (before filtering)
+        // logic: calculate frequency (popularity) and sort descending
+        if (availableInstruments.length === 0) {
+            const instrumentCounts: Record<string, number> = {};
+
+            (data as MusicTrack[]).forEach(track => {
+                const addInst = (inst: string) => {
+                    const i = inst.trim();
+                    if (i) {
+                        instrumentCounts[i] = (instrumentCounts[i] || 0) + 1;
+                    }
+                };
+
+                if (Array.isArray(track.instrument)) {
+                    track.instrument.forEach(addInst);
+                } else if (typeof track.instrument === 'string' && track.instrument) {
+                    addInst(track.instrument);
+                }
+            });
+
+            // Convert map to array, sort by count (desc), then take name
+            const sortedInstruments = Object.entries(instrumentCounts)
+                .sort((a, b) => b[1] - a[1]) // Sort by frequency desc
+                .map(entry => entry[0]);
+
+            setAvailableInstruments(sortedInstruments);
+        }
 
         // 2. Apply Filters in Memory with ROBUST LOGIC
         const normalize = (val: any) => String(val).toLowerCase().trim();
@@ -84,6 +116,7 @@ export const Library: React.FC = () => {
                     JSON.stringify(track.tags),
                     JSON.stringify(track.genre),
                     JSON.stringify(track.mood),
+                    JSON.stringify(track.instrument),
                     JSON.stringify(track.media_theme)
                 ].join(' ').toLowerCase();
                 return terms.some(t => trackString.includes(t));
@@ -92,6 +125,7 @@ export const Library: React.FC = () => {
 
         if (selectedGenres.length > 0) filteredData = filteredData.filter(track => checkFilterMatch(track.genre, selectedGenres));
         if (selectedMoods.length > 0) filteredData = filteredData.filter(track => checkFilterMatch(track.mood, selectedMoods));
+        if (selectedInstruments.length > 0) filteredData = filteredData.filter(track => checkFilterMatch(track.instrument, selectedInstruments));
         if (selectedSeasons.length > 0) filteredData = filteredData.filter(track => checkFilterMatch(track.season, selectedSeasons));
         if (bpmRange) {
             filteredData = filteredData.filter(track => {
@@ -120,6 +154,7 @@ export const Library: React.FC = () => {
       // Clear existing filters
       setSearchTerm('');
       setSelectedSeasons([]);
+      setSelectedInstruments([]);
       setBpmRange(null);
       setSearchParams({});
 
@@ -154,6 +189,7 @@ export const Library: React.FC = () => {
       setSearchTerm('');
       setSelectedGenres([]);
       setSelectedMoods([]);
+      setSelectedInstruments([]);
       setSelectedSeasons([]);
       setBpmRange(null);
       setSearchParams({}); 
@@ -174,13 +210,14 @@ export const Library: React.FC = () => {
       }
   };
 
-  const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedSeasons.length > 0 || bpmRange;
+  const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedInstruments.length > 0 || selectedSeasons.length > 0 || bpmRange;
 
   // Dynamic SEO Title Generator
   const getPageTitle = () => {
       if (searchTerm) return `"${searchTerm}" Search Results`;
       if (selectedGenres.length > 0) return `${selectedGenres.join(', ')} Royalty Free Music`;
       if (selectedMoods.length > 0) return `${selectedMoods.join(', ')} Royalty Free Music`;
+      if (selectedInstruments.length > 0) return `${selectedInstruments.join(', ')} Royalty Free Music`;
       if (selectedSeasons.length > 0) return `${selectedSeasons.join(', ')} Royalty Free Music`;
       return "Music Library";
   };
@@ -222,6 +259,18 @@ export const Library: React.FC = () => {
             linkTo="/categories/moods"
             isDark={isDarkMode}
         />
+
+        {/* New Instruments Filter */}
+        {availableInstruments.length > 0 && (
+            <CollapsibleFilterSection 
+                title="Instruments" 
+                items={availableInstruments} 
+                selected={selectedInstruments} 
+                onChange={(i) => toggleFilter(selectedInstruments, setSelectedInstruments, i)} 
+                linkTo="/categories/instruments"
+                isDark={isDarkMode}
+            />
+        )}
         
         <CollapsibleFilterSection 
             title="Tempo" 
@@ -280,6 +329,9 @@ export const Library: React.FC = () => {
                     ))}
                     {selectedMoods.map(m => (
                         <ActiveFilterBadge key={m} label={m} onRemove={() => toggleFilter(selectedMoods, setSelectedMoods, m)} isDark={isDarkMode} />
+                    ))}
+                    {selectedInstruments.map(i => (
+                        <ActiveFilterBadge key={i} label={i} onRemove={() => toggleFilter(selectedInstruments, setSelectedInstruments, i)} isDark={isDarkMode} />
                     ))}
                     {selectedSeasons.map(s => (
                         <ActiveFilterBadge key={s} label={s} onRemove={() => toggleFilter(selectedSeasons, setSelectedSeasons, s)} isDark={isDarkMode} />

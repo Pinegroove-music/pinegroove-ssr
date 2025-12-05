@@ -15,6 +15,7 @@ import { ContentId } from './pages/ContentId';
 import { GenresPage } from './pages/GenresPage';
 import { MoodsPage } from './pages/MoodsPage';
 import { SeasonalPage } from './pages/SeasonalPage';
+import { InstrumentsPage } from './pages/InstrumentsPage';
 import { useStore } from './store/useStore';
 import { Menu, Search } from 'lucide-react';
 
@@ -153,6 +154,7 @@ const Layout: React.FC = () => {
             <Route path="/categories/genres" element={<GenresPage />} />
             <Route path="/categories/moods" element={<MoodsPage />} />
             <Route path="/categories/seasonal" element={<SeasonalPage />} />
+            <Route path="/categories/instruments" element={<InstrumentsPage />} />
             <Route path="/track/:id" element={<TrackDetail />} />
             <Route path="/music-packs" element={<MusicPacks />} />
             <Route path="/music-packs/:id" element={<MusicPackDetail />} />
