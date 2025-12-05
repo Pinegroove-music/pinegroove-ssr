@@ -97,9 +97,9 @@ export const TrackDetail: React.FC = () => {
         return `Download ${track.title} by ${track.artist_name}. High-quality royalty-free music suitable for video editing, podcasts, and commercial projects.`;
     }
 
-    // 4. Truncate to standard SEO length (approx 155-160 chars)
-    if (desc.length > 155) {
-        return desc.substring(0, 155).trim() + "...";
+    // 4. Truncate strictly to 100 characters as requested
+    if (desc.length > 100) {
+        return desc.substring(0, 100).trim() + "...";
     }
     
     return desc;

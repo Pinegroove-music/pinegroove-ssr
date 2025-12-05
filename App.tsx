@@ -18,6 +18,7 @@ import { SeasonalPage } from './pages/SeasonalPage';
 import { InstrumentsPage } from './pages/InstrumentsPage';
 import { useStore } from './store/useStore';
 import { Menu, Search } from 'lucide-react';
+import { SEO } from './components/SEO';
 
 const Layout: React.FC = () => {
   const { isDarkMode } = useStore();
@@ -105,6 +106,12 @@ const Layout: React.FC = () => {
   return (
     <div className={`min-h-screen flex transition-colors duration-300 ${isDarkMode ? 'dark bg-zinc-950 text-zinc-100' : 'bg-white text-zinc-900'}`}>
       
+      {/* GLOBAL DEFAULT SEO */}
+      <SEO 
+        title="Royalty Free Music Library" 
+        description="Pinegroove offers a catalog of high-quality, royalty-free stock music perfect for videos, YouTube, social media, TV, and web projects. Find your perfect soundtrack here." 
+      />
+
       {/* Sidebar */}
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
