@@ -101,7 +101,7 @@ export const ContentId: React.FC = () => {
             </div>
         </div>
 
-      <div className="max-w-2xl mx-auto px-4 relative z-20 -mt-20">
+      <div className="max-w-2xl mx-auto px-4 relative z-20 -mt-6 md:-mt-20">
         
         {/* Info Box */}
         <div className={`text-left p-8 rounded-2xl mb-8 border shadow-xl ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-100'}`}>

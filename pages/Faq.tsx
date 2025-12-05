@@ -134,7 +134,7 @@ export const Faq: React.FC = () => {
             </div>
 
             {/* Main Content with Overlap */}
-            <div className="max-w-4xl mx-auto px-4 relative z-20 -mt-20">
+            <div className="max-w-4xl mx-auto px-4 relative z-20 -mt-6 md:-mt-20">
                 <div className={`rounded-3xl p-8 md:p-12 shadow-2xl ${isDarkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-100'}`}>
                     <div className="space-y-12">
                         {faqSections.map((section, sectionIdx) => (

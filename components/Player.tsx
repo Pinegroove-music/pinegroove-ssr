@@ -12,7 +12,7 @@ const formatTime = (time: number) => {
 };
 
 export const Player: React.FC = () => {
-  const { currentTrack, isPlaying, togglePlay, isDarkMode, setProgress, volume, setVolume, seekTime, setSeekTime } = useStore();
+  const { currentTrack, isPlaying, togglePlay, isDarkMode, setProgress, volume, setVolume, seekTime, setSeekTime, progress } = useStore();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -114,7 +114,7 @@ export const Player: React.FC = () => {
     <div className={`
       fixed bottom-0 left-0 right-0 z-50 h-20 border-t px-4
       ${isDarkMode ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-white border-zinc-200 text-zinc-900'}
-      shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex items-center gap-4 transition-colors duration-300
+      shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex items-center justify-between transition-colors duration-300
     `}>
       <audio 
         ref={audioRef} 
@@ -123,14 +123,43 @@ export const Player: React.FC = () => {
         crossOrigin="anonymous"
       />
 
-      {/* 1. Track Info (Left) */}
-      <div className="flex items-center gap-3 w-48 md:w-64 flex-shrink-0">
+      {/* MOBILE SPECIFIC: Top Progress Bar */}
+      <div className="md:hidden absolute top-0 left-0 right-0 h-1 bg-zinc-200 dark:bg-zinc-800 pointer-events-none">
+         <div 
+             className="h-full bg-sky-500 transition-all duration-100 ease-linear relative" 
+             style={{ width: `${progress}%` }}
+         >
+             {/* Draggable Thumb Hit Area (Invisible but functional) */}
+             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-transparent rounded-full translate-x-1/2 pointer-events-auto"></div>
+         </div>
+      </div>
+      {/* Mobile Seek Input Overlay */}
+      <input 
+        type="range" 
+        min="0" 
+        max="100" 
+        step="0.1"
+        value={progress}
+        onChange={handleSeek}
+        className="md:hidden absolute top-[-6px] left-0 right-0 h-4 w-full opacity-0 cursor-pointer z-50"
+      />
+
+      {/* MOBILE SPECIFIC: Play Button (Left) */}
+      <button 
+        onClick={togglePlay}
+        className={`md:hidden flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full mr-2 shadow-sm ${isDarkMode ? 'bg-zinc-800 text-white' : 'bg-black text-white'}`}
+      >
+        {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1"/>}
+      </button>
+
+      {/* 1. Track Info (Center on Mobile, Left on Desktop) */}
+      <div className="flex flex-1 items-center justify-center md:justify-start gap-3 min-w-0 px-2 md:px-0 md:w-64 md:flex-none">
         <img 
           src={currentTrack.cover_url} 
           alt={currentTrack.title} 
           className="w-12 h-12 object-cover rounded shadow-sm hidden sm:block"
         />
-        <div className="overflow-hidden min-w-0">
+        <div className="overflow-hidden min-w-0 w-full text-center md:text-left">
           <Link to={`/track/${currentTrack.id}`} className="font-bold text-sm truncate block hover:text-sky-500 transition-colors">
             {currentTrack.title}
           </Link>
@@ -140,8 +169,8 @@ export const Player: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Main Controls: Play + Waveform + Timers (Center) */}
-      <div className="flex-1 flex items-center gap-4 min-w-0 justify-center">
+      {/* 2. Desktop Main Controls: Play + Waveform + Timers (Center) */}
+      <div className="hidden md:flex flex-1 items-center gap-4 min-w-0 justify-center">
           <button 
             onClick={togglePlay}
             className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition hover:scale-105 shadow-sm ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
@@ -161,7 +190,7 @@ export const Player: React.FC = () => {
                             track={currentTrack} 
                             height="h-full" 
                             interactive={true} 
-                            enableAnalysis={true} // Explicitly enable real analysis
+                            enableAnalysis={true} 
                         />
                     </div>
                     
@@ -182,6 +211,7 @@ export const Player: React.FC = () => {
                     />
               </div>
 
+              {/* Remaining Time */}
               <span className="text-xs font-mono opacity-50 min-w-[40px]">
                   -{formatTime(remainingTime)}
               </span>
@@ -190,7 +220,9 @@ export const Player: React.FC = () => {
 
       {/* 3. Volume & License (Right) */}
       <div className="flex items-center gap-4 flex-shrink-0">
-        <div className="flex items-center gap-2 group relative">
+        
+        {/* Desktop Volume */}
+        <div className="hidden md:flex items-center gap-2 group relative">
             <button onClick={toggleMute} className="opacity-60 hover:opacity-100 transition p-2">
                 <VolumeIcon size={20} />
             </button>
@@ -207,6 +239,7 @@ export const Player: React.FC = () => {
             </div>
         </div>
 
+        {/* Desktop Buy Button */}
         {currentTrack.gumroad_link && (
             <a 
                 href={currentTrack.gumroad_link}
@@ -214,6 +247,17 @@ export const Player: React.FC = () => {
             >
                 <ShoppingCart size={14} />
                 <span>Buy License</span>
+            </a>
+        )}
+
+        {/* Mobile Cart Button */}
+        {currentTrack.gumroad_link && (
+            <a 
+                href={currentTrack.gumroad_link}
+                className="md:hidden p-2 bg-sky-600 text-white rounded-full shadow-lg hover:bg-sky-500 transition-colors"
+                title="Buy License"
+            >
+                <ShoppingCart size={20} />
             </a>
         )}
       </div>

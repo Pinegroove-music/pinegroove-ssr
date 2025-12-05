@@ -162,7 +162,8 @@ export const MusicPackDetail: React.FC = () => {
                                 ${active ? 'ring-1 ring-sky-500 bg-sky-50 dark:bg-sky-900/20' : ''}
                             `}
                         >
-                            <div className="w-8 text-center opacity-40 font-mono text-sm">{index + 1}</div>
+                            {/* Track Order - Hidden on Mobile */}
+                            <div className="hidden md:block w-8 text-center opacity-40 font-mono text-sm">{index + 1}</div>
                             
                             <div 
                                 className="relative w-12 h-12 rounded-lg overflow-hidden cursor-pointer flex-shrink-0 group"
@@ -184,8 +185,6 @@ export const MusicPackDetail: React.FC = () => {
                                     >
                                         {track.artist_name}
                                     </Link>
-                                    <span className="md:hidden opacity-30">•</span>
-                                    <span className="md:hidden text-xs opacity-50 font-mono">{track.bpm} BPM</span>
                                 </div>
                             </div>
 
@@ -204,7 +203,8 @@ export const MusicPackDetail: React.FC = () => {
                                 ) : null}
                             </div>
 
-                            <div className="w-16 text-right font-mono text-sm opacity-50">
+                            {/* Duration - Hidden on Mobile */}
+                            <div className="hidden md:block w-16 text-right font-mono text-sm opacity-50">
                                 {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
                             </div>
                         </div>

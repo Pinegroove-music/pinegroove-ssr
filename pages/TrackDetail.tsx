@@ -89,8 +89,9 @@ export const TrackDetail: React.FC = () => {
     // 1. Get raw description
     let desc = track.description || "";
     
-    // 2. Sanitize: Replace newlines with spaces and remove multiple spaces
-    desc = desc.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    // 2. Sanitize: Replace newlines with spaces, remove multiple spaces, AND REPLACE QUOTES
+    // Replacing double quotes with single quotes prevents HTML attribute breakage
+    desc = desc.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').replace(/"/g, "'").trim();
 
     // 3. Fallback if empty
     if (!desc) {

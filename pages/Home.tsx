@@ -474,7 +474,7 @@ export const Home: React.FC = () => {
               <div 
                 key={track.id} 
                 className={`
-                  flex items-center gap-4 p-3 rounded-lg border transition hover:shadow-md
+                  flex items-center gap-3 p-3 rounded-lg border transition hover:shadow-md
                   ${isDarkMode ? 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800' : 'bg-white border-zinc-100 hover:bg-sky-50'}
                   ${isCurrent && isPlaying ? 'border-sky-500' : ''}
                 `}
@@ -490,8 +490,8 @@ export const Home: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Info Fixed Width */}
-                <div className="w-32 sm:w-48 lg:w-40 xl:w-64 min-w-0">
+                {/* Info - Takes available space on mobile (flex-1), Fixed Width on Desktop */}
+                <div className="flex-1 min-w-0 sm:flex-none sm:w-48 lg:w-40 xl:w-64">
                   <Link to={`/track/${track.id}`} className="font-bold truncate block hover:text-sky-500">{track.title}</Link>
                   <div className="flex items-center gap-2 text-xs opacity-70">
                     <span className="truncate">{track.artist_name}</span>
@@ -504,22 +504,24 @@ export const Home: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Waveform - Takes remaining space */}
+                {/* Waveform - Takes remaining space on desktop, Hidden on mobile */}
                 <div className="hidden sm:flex flex-1 h-full items-center px-4">
                     <WaveformVisualizer track={track} height="h-8" barCount={80} />
                 </div>
 
-                {/* Duration */}
-                <div className="text-sm font-mono opacity-60 w-12 text-right">
-                    {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
-                </div>
+                {/* Right Group (Duration + Cart) */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="text-sm font-mono opacity-60 text-right whitespace-nowrap">
+                        {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
+                    </div>
 
-                <a 
-                  href={track.gumroad_link || '#'} 
-                  className={`p-2 rounded-full transition flex-shrink-0 ${isDarkMode ? 'bg-zinc-800 hover:bg-sky-600' : 'bg-gray-100 hover:bg-sky-500 hover:text-white'}`}
-                >
-                  <ShoppingCart size={18} />
-                </a>
+                    <a 
+                    href={track.gumroad_link || '#'} 
+                    className={`p-2 rounded-full transition flex-shrink-0 ${isDarkMode ? 'bg-zinc-800 hover:bg-sky-600' : 'bg-gray-100 hover:bg-sky-500 hover:text-white'}`}
+                    >
+                    <ShoppingCart size={18} />
+                    </a>
+                </div>
               </div>
             );
           })}
