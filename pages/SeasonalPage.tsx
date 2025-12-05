@@ -29,11 +29,20 @@ export const SeasonalPage: React.FC = () => {
     const fetchSeasons = async () => {
       const { data } = await supabase.from('music_tracks').select('season');
       if (data) {
+        // Robustly handle JSONB: it can be a string, an array of strings, or null.
         const allSeasons = (data as any[])
-          .map((track: any) => track.season)
-          .filter((s: any): s is string => typeof s === 'string' && s.length > 0);
+          .flatMap((track: any) => {
+             const s = track.season;
+             if (Array.isArray(s)) return s; // Handle ["Summer", "Party"]
+             if (typeof s === 'string' && s.trim().length > 0) return [s]; // Handle "Summer"
+             return [];
+          })
+          .filter((s: any): s is string => typeof s === 'string' && s.length > 0)
+          .map(s => s.trim()); // Normalize
         
+        // Merge with defaults and remove duplicates
         const uniqueSeasons = Array.from(new Set([...defaultSeasons, ...allSeasons])).sort();
+        
         if (uniqueSeasons.length > 0) setSeasons(uniqueSeasons);
       }
     };
