@@ -1,23 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
-import { Tag, ArrowLeft, Smile, Calendar, Music } from 'lucide-react';
+import { Tag, ArrowLeft, Smile, Calendar, Music, Clapperboard, Briefcase, Zap, Guitar, Coffee, Mic2, Globe, Cloud, Layers, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { SEO } from '../components/SEO';
+
+// Define the Category Structure
+type GenreCategory = {
+  title: string;
+  icon: React.ReactNode;
+  subgenres: string[];
+};
 
 export const GenresPage: React.FC = () => {
   const { isDarkMode } = useStore();
   
-  const defaultGenres = [
-    'Cinematic', 'Corporate', 'Ambient', 'Rock', 'Pop', 'Electronic', 
-    'Acoustic', 'Folk', 'Hip Hop', 'Jazz', 'Classical', 'Funk', 
-    'Soul', 'Reggae', 'World', 'Lo-Fi', 'Orchestral', 'Trailer',
-    'Indie', 'Alternative', 'Country', 'Blues', 'Latin', 'Metal'
-  ];
-
-  const [genres, setGenres] = useState<string[]>(defaultGenres.sort());
+  // State to track which categories are expanded
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   
-  // Elegant Blue/Purple Gradients
+  // Blue/Purple/Sky Gradients (Matching Home Page)
   const gradients = [
     'bg-gradient-to-br from-sky-500 to-blue-600',
     'bg-gradient-to-br from-blue-500 to-indigo-600',
@@ -27,25 +28,126 @@ export const GenresPage: React.FC = () => {
     'bg-gradient-to-br from-blue-600 to-violet-700',
   ];
 
+  // 1. Define the Macro-Categories
+  const genreCategories: GenreCategory[] = [
+    {
+        title: "Cinematic & Film Score",
+        icon: <Clapperboard size={24} />,
+        subgenres: ['Action', 'Adventure', 'Broadway', 'Cinematic', 'Epic', 'Drama', 'Film Noir', 'Fantasy', 'Horror', 'Hybrid', 'Industrial', 'Orchestral', 'Patriotic', 'Sci-Fi', 'Score', 'Spaghetti Western', 'Soundtrack', 'Thriller', 'Trailer']
+    },
+    {
+        title: "Corporate & Business",
+        icon: <Briefcase size={24} />,
+        subgenres: ['Business', 'Corporate', 'Documentary', 'Inspiring', 'Motivational', 'Presentation', 'Tech']
+    },
+    {
+        title: "Pop & Electronic",
+        icon: <Zap size={24} />,
+        subgenres: ["80's", 'Club', 'Dance', 'EDM', 'Electro', 'Electronica', 'Future Bass', 'Future Garage', 'House', 'Jungle', 'Pop', 'Synthwave', 'Techno', 'Trap', 'Retrowave']
+    },
+    {
+        title: "Rock",
+        icon: <Guitar size={24} />,
+        subgenres: ['Alternative', 'Blues', 'Doo-wop', 'Garage', 'Indie', 'Jive', 'Metal', 'Punk', 'Rock', "Rock'n'Roll", 'Rockabilly', 'Ska']
+    },
+    {
+        title: "Ambient & Chill",
+        icon: <Cloud size={24} />,
+        subgenres: ['Ambient', 'Atmospheric', 'Chillout', 'Chillstep', 'Deep House', 'Drone', 'Easy Listening', 'Lo-Fi', 'Lounge', 'Meditation', 'Relaxing', 'Smooth Jazz']
+    },
+    {
+        title: "Country & Folk",
+        icon: <Coffee size={24} />,
+        subgenres: ['Acoustic', 'Americana', 'Bluegrass', 'Country', 'Western', 'Serenade', 'Folk', 'Organic', 'Singer-Songwriter', 'Traditional']
+    },
+    {
+        title: "Jazz",
+        icon: (
+            // Custom Trumpet Icon
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 8v8" />
+                <path d="M9 8v8" />
+                <path d="M13 8v8" />
+                <path d="M2 12h3" />
+                <path d="M13 11h2l5-4v10l-5-4h-2" />
+            </svg>
+        ), 
+        subgenres: ['Bebop', 'Big Band', 'Charleston', 'Dixieland', 'Electro Swing', 'Gospel', 'Gypsy', 'Jazz', 'Ragtime', 'Swing']
+    },
+    {
+        title: "Classical",
+        icon: <Music size={24} />,
+        subgenres: ['Baroque', 'Chamber Music', 'Choir', 'Classical', 'Concerto', 'Fanfare', 'Neoclassical', 'Orchestral', 'Symphonic', 'Waltz']
+    },
+    {
+        title: "Funk & Groove",
+        icon: (
+            // Custom Drum Icon
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <ellipse cx="12" cy="7" rx="10" ry="5" />
+                <path d="M2 7v10c0 2.76 4.48 5 10 5s10-2.24 10-5v-10" />
+            </svg>
+        ),
+        subgenres: ['Afro-Funk', 'Disco', 'Funk', 'Groove', 'Hip Hop', 'R&B', 'Soul', 'Urban']
+    },
+    {
+        title: "World",
+        icon: <Globe size={24} />,
+        subgenres: ['African', 'Afro-Cuban', 'Arabic', 'Asian', 'Bhangra', 'Bollywood', 'Bossa Nova', 'Calypso', 'Celtic', 'Chinese', 'Cuban Son', 'Ethnic', 'Ethno', 'Hawaiian', 'Indigenous', 'Irish', 'Italian', 'Italian Folk', 'Jig', 'Latin', 'Mariachi', 'Mexican', 'Middle Eastern', 'Musette', 'Native American', 'Polynesian', 'Reggae', 'Salsa', 'Samba', 'Swing', 'Tango', 'Tarantella', 'Tribal', 'World']
+    },
+    {
+        title: "Children's",
+        icon: <Smile size={24} />,
+        subgenres: ["Children's Music", "Lullaby"]
+    },
+    {
+        title: "Holiday & Seasonal",
+        icon: <Calendar size={24} />,
+        subgenres: ['Christmas', 'Halloween', 'Holiday Music']
+    },
+    {
+        title: "Miscellaneous",
+        icon: <Package size={24} />,
+        subgenres: ['Ballad', 'Comedy', 'Instrumental', 'March', 'Marching band', 'Percussion', 'Vocals']
+    }
+  ];
+
+  // State to hold genres found in DB that are NOT in the categories above
+  const [uncategorizedGenres, setUncategorizedGenres] = useState<string[]>([]);
+
   useEffect(() => {
     const fetchGenres = async () => {
       const { data } = await supabase.from('music_tracks').select('genre');
 
       if (data) {
-        const allGenres = (data as any[])
+        const allDbGenres = (data as any[])
           .flatMap((track: any) => track.genre || [])
           .filter((g: any): g is string => typeof g === 'string' && g.length > 0);
         
-        const uniqueGenres = Array.from(new Set([...defaultGenres, ...allGenres])).sort();
-        if (uniqueGenres.length > 0) setGenres(uniqueGenres);
+        const uniqueDbGenres = Array.from(new Set(allDbGenres));
+        const categorizedSet = new Set(genreCategories.flatMap(c => c.subgenres.map(s => s.toLowerCase())));
+        const leftovers = uniqueDbGenres.filter(g => !categorizedSet.has(g.toLowerCase())).sort();
+        
+        if (leftovers.length > 0) {
+            setUncategorizedGenres(leftovers);
+        }
       }
     };
     fetchGenres();
   }, []);
 
+  const toggleCategory = (title: string) => {
+    if (expandedCategories.includes(title)) {
+        setExpandedCategories(expandedCategories.filter(t => t !== title));
+    } else {
+        setExpandedCategories([...expandedCategories, title]);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 pb-32">
-        <SEO title="Browse Music by Genre" description="Explore our catalog by musical genre. Cinematic, Corporate, Rock, Pop, and more." />
+        <SEO title="Browse Music by Genre" description="Explore our catalog categorized by Cinematic, Corporate, Rock, Electronic, and more." />
+        
         {/* Navigation Header */}
         <div className="flex flex-wrap items-center gap-4 mb-8 text-sm font-medium">
             <Link to="/library" className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
@@ -63,32 +165,140 @@ export const GenresPage: React.FC = () => {
             </Link>
         </div>
         
-        <h1 className="text-4xl font-black mb-4 flex items-center gap-3 tracking-tight">
-            <Tag className="text-sky-500" size={36} /> ALL GENRES
-        </h1>
-        <p className="text-lg opacity-70 mb-12 max-w-2xl">
-            Browse our complete catalog by musical genre. Find the perfect style for your project.
-        </p>
+        <div className="mb-10 text-center">
+            <h1 className="text-4xl md:text-5xl font-black mb-4 flex items-center justify-center gap-3 tracking-tight">
+                <Tag className="text-sky-500" size={40} /> GENRES
+            </h1>
+            <p className="text-xl opacity-70 max-w-2xl mx-auto">
+                Explore our music library by category. Click a card to reveal subgenres.
+            </p>
+        </div>
 
-        {/* Grid Layout for Homogeneous Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {genres.map((genre, index) => {
+        {/* 3-Column Grid for Desktop, 1-Column for Mobile */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-[1920px] mx-auto">
+            {genreCategories.map((category, index) => {
+                const isExpanded = expandedCategories.includes(category.title);
                 const gradient = gradients[index % gradients.length];
+                
                 return (
-                <Link
-                    key={genre}
-                    to={`/library?search=${encodeURIComponent(genre)}`}
+                    <div 
+                        key={category.title} 
+                        className={`
+                            rounded-2xl overflow-hidden shadow-md transition-all duration-300
+                            ${isDarkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-gray-100'}
+                            ${isExpanded ? 'ring-2 ring-sky-500/50 shadow-xl' : 'hover:shadow-lg'}
+                        `}
+                    >
+                        {/* Header Area (Clickable) */}
+                        <button 
+                            onClick={() => toggleCategory(category.title)}
+                            className={`
+                                w-full h-20 flex items-center justify-between px-6 text-white transition-all
+                                ${gradient}
+                                ${isExpanded ? 'brightness-110' : 'hover:brightness-105'}
+                            `}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="p-2 bg-white/20 rounded-full backdrop-blur-sm">
+                                    {category.icon}
+                                </div>
+                                <h2 className="text-lg md:text-xl font-bold text-left leading-tight drop-shadow-sm">
+                                    {category.title}
+                                </h2>
+                            </div>
+                            
+                            <div className={`transform transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                                <ChevronDown size={24} className="text-white/80" />
+                            </div>
+                        </button>
+
+                        {/* Content Area (Collapsible) */}
+                        <div 
+                            className={`
+                                overflow-hidden transition-all duration-300 ease-in-out
+                                ${isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}
+                            `}
+                        >
+                            <div className="p-6">
+                                <div className="flex flex-wrap gap-2">
+                                    {category.subgenres.map((genre) => (
+                                        <Link
+                                            key={genre}
+                                            to={`/library?search=${encodeURIComponent(genre)}`}
+                                            className={`
+                                                px-3 py-2 rounded-lg text-sm font-medium border transition-all duration-200
+                                                ${isDarkMode 
+                                                    ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:bg-sky-600 hover:border-sky-500' 
+                                                    : 'bg-gray-50 border-zinc-200 text-zinc-600 hover:text-white hover:bg-sky-500 hover:border-sky-500'}
+                                            `}
+                                        >
+                                            {genre}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+
+            {/* "More Genres" Card */}
+            {uncategorizedGenres.length > 0 && (
+                <div 
                     className={`
-                        ${gradient} text-white
-                        h-24 flex items-center justify-center text-center px-4
-                        rounded-xl font-bold text-sm md:text-base uppercase tracking-widest 
-                        transition-all transform hover:-translate-y-1 hover:shadow-lg hover:brightness-110 shadow-md
+                        rounded-2xl overflow-hidden shadow-md transition-all duration-300
+                        ${isDarkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-gray-100'}
+                        ${expandedCategories.includes('More Genres') ? 'ring-2 ring-sky-500/50 shadow-xl' : 'hover:shadow-lg'}
                     `}
                 >
-                    {genre}
-                </Link>
-                )
-            })}
+                    <button 
+                        onClick={() => toggleCategory('More Genres')}
+                        className={`
+                            w-full h-20 flex items-center justify-between px-6 text-white transition-all
+                            bg-gradient-to-br from-slate-500 to-zinc-600
+                            hover:brightness-105
+                        `}
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 bg-white/20 rounded-full backdrop-blur-sm">
+                                <Layers size={24} />
+                            </div>
+                            <h2 className="text-lg md:text-xl font-bold text-left leading-tight drop-shadow-sm">
+                                More Genres
+                            </h2>
+                        </div>
+                        <div className={`transform transition-transform duration-300 ${expandedCategories.includes('More Genres') ? 'rotate-180' : 'rotate-0'}`}>
+                            <ChevronDown size={24} className="text-white/80" />
+                        </div>
+                    </button>
+
+                    <div 
+                        className={`
+                            overflow-hidden transition-all duration-300 ease-in-out
+                            ${expandedCategories.includes('More Genres') ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}
+                        `}
+                    >
+                        <div className="p-6">
+                            <div className="flex flex-wrap gap-2">
+                                {uncategorizedGenres.map((genre) => (
+                                    <Link
+                                        key={genre}
+                                        to={`/library?search=${encodeURIComponent(genre)}`}
+                                        className={`
+                                            px-3 py-2 rounded-lg text-sm font-medium border transition-all duration-200
+                                            ${isDarkMode 
+                                                ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:bg-sky-600 hover:border-sky-500' 
+                                                : 'bg-gray-50 border-zinc-200 text-zinc-600 hover:text-white hover:bg-sky-500 hover:border-sky-500'}
+                                        `}
+                                    >
+                                        {genre}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     </div>
   );
