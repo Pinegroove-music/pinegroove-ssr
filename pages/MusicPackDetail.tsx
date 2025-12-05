@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Album, MusicTrack } from '../types';
 import { useStore } from '../store/useStore';
-import { ShoppingCart, Disc, Play, Pause, Check, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, Disc, Play, Pause, Check, ArrowLeft, AlertTriangle, Sparkles, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 import { SEO } from '../components/SEO';
@@ -12,12 +12,16 @@ export const MusicPackDetail: React.FC = () => {
   const { id } = useParams();
   const [album, setAlbum] = useState<Album | null>(null);
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
+  const [relatedPacks, setRelatedPacks] = useState<Album[]>([]);
   const { isDarkMode, playTrack, currentTrack, isPlaying } = useStore();
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
+      // Scroll to top when ID changes (navigation from related packs)
+      window.scrollTo(0, 0);
+
       const fetchData = async () => {
         setLoading(true);
         try {
@@ -64,6 +68,18 @@ export const MusicPackDetail: React.FC = () => {
                 setTracks([]);
             }
 
+            // 5. Fetch Related Packs (Random 4, excluding current)
+            const { data: otherPacks } = await supabase
+                .from('album')
+                .select('*')
+                .neq('id', id);
+            
+            if (otherPacks) {
+                // Shuffle array and take first 4
+                const shuffled = [...otherPacks].sort(() => 0.5 - Math.random());
+                setRelatedPacks(shuffled.slice(0, 4));
+            }
+
         } catch (err: any) {
             console.error("Error loading music pack:", err);
             setErrorMsg(err.message || "Unknown error");
@@ -89,6 +105,16 @@ export const MusicPackDetail: React.FC = () => {
     ? `Buy ${album.title} Music Pack. ${album.description.substring(0, 100)}...`
     : `Buy ${album.title}, a premium collection of royalty free music tracks by Francesco Biondi.`;
 
+  // Logic for playing the first track
+  const firstTrack = tracks.length > 0 ? tracks[0] : null;
+  const isPlayingFirstTrack = firstTrack && currentTrack?.id === firstTrack.id && isPlaying;
+
+  const handleAlbumPlay = () => {
+    if (firstTrack) {
+        playTrack(firstTrack);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 pb-32">
       <SEO title={album.title} description={seoDescription} image={album.cover_url} />
@@ -99,11 +125,31 @@ export const MusicPackDetail: React.FC = () => {
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row gap-12 mb-16 items-start">
-         <div className="w-full lg:w-[400px] aspect-square rounded-3xl overflow-hidden shadow-2xl flex-shrink-0 relative bg-zinc-200 dark:bg-zinc-800">
+         
+         {/* Album Cover with Play Overlay */}
+         <div 
+            className="w-full lg:w-[400px] aspect-square rounded-3xl overflow-hidden shadow-2xl flex-shrink-0 relative bg-zinc-200 dark:bg-zinc-800 group cursor-pointer"
+            onClick={handleAlbumPlay}
+         >
             <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
-            <div className="absolute top-4 right-4 bg-sky-500 text-white font-bold px-4 py-2 rounded-full shadow-lg text-lg">
+            
+            {/* Price Tag */}
+            <div className="absolute top-4 right-4 bg-sky-500 text-white font-bold px-4 py-2 rounded-full shadow-lg text-lg z-20">
                 ${(album.price / 100).toFixed(2)}
             </div>
+
+            {/* Play Button Overlay */}
+            {firstTrack && (
+                <div className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-300 z-10 ${isPlayingFirstTrack ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/50 shadow-lg transition-transform transform group-hover:scale-110">
+                        {isPlayingFirstTrack ? (
+                            <Pause size={40} className="text-white fill-white" />
+                        ) : (
+                            <Play size={40} className="text-white fill-white ml-2" />
+                        )}
+                    </div>
+                </div>
+            )}
          </div>
 
          <div className="flex-1 pt-4">
@@ -213,6 +259,55 @@ export const MusicPackDetail: React.FC = () => {
             </div>
         )}
       </div>
+
+      {/* Related Packs Section */}
+      {relatedPacks.length > 0 && (
+          <div className="mt-16 pt-12 border-t border-gray-200 dark:border-zinc-800">
+             <h3 className="text-2xl font-bold mb-8 flex items-center gap-2">
+                <Sparkles className="text-sky-500" size={24}/> Discover More Music Packs
+             </h3>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedPacks.map(pack => (
+                     <div 
+                        key={pack.id} 
+                        className={`
+                            group rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full
+                            ${isDarkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-100 shadow-md'}
+                        `}
+                    >
+                        {/* Cover Area */}
+                        <Link to={`/music-packs/${pack.id}`} className="w-full aspect-square relative overflow-hidden bg-zinc-200 dark:bg-zinc-800 block">
+                            <img 
+                                src={pack.cover_url} 
+                                alt={pack.title} 
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                            />
+                        </Link>
+
+                        {/* Content Area */}
+                        <div className="p-4 flex flex-col flex-1">
+                            <h4 className="font-bold text-lg mb-1 leading-tight group-hover:text-sky-500 transition-colors line-clamp-1">
+                                <Link to={`/music-packs/${pack.id}`}>{pack.title}</Link>
+                            </h4>
+                            
+                            <div className="mt-auto pt-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between">
+                                <div className="font-bold text-sky-600 dark:text-sky-400">
+                                    ${(pack.price / 100).toFixed(2)}
+                                </div>
+                                
+                                <Link 
+                                    to={`/music-packs/${pack.id}`}
+                                    className={`p-2 rounded-full transition ${isDarkMode ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-black'}`}
+                                >
+                                    <ArrowRight size={16} />
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+             </div>
+          </div>
+      )}
     </div>
   );
 };
