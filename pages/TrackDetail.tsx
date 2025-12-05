@@ -84,10 +84,29 @@ export const TrackDetail: React.FC = () => {
     ));
   };
 
+  // Robust SEO Description Generator
+  const getSeoDescription = () => {
+    // 1. Get raw description
+    let desc = track.description || "";
+    
+    // 2. Sanitize: Replace newlines with spaces and remove multiple spaces
+    desc = desc.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+    // 3. Fallback if empty
+    if (!desc) {
+        return `Download ${track.title} by ${track.artist_name}. High-quality royalty-free music suitable for video editing, podcasts, and commercial projects.`;
+    }
+
+    // 4. Truncate to standard SEO length (approx 155-160 chars)
+    if (desc.length > 155) {
+        return desc.substring(0, 155).trim() + "...";
+    }
+    
+    return desc;
+  };
+
   const seoTitle = `${track.title} by ${track.artist_name}`;
-  const seoDescription = track.description 
-    ? track.description.substring(0, 160) 
-    : `Listen to ${track.title} by ${track.artist_name}. A high-quality royalty-free music track suitable for video and commercial projects.`;
+  const seoDescription = getSeoDescription();
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 pb-32">
@@ -102,7 +121,7 @@ export const TrackDetail: React.FC = () => {
                     onClick={() => playTrack(track)}
                     className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
                 >
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/50">
+                    <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/50">
                         {active ? <Pause size={40} className="text-white"/> : <Play size={40} className="text-white ml-2"/>}
                     </div>
                 </button>
