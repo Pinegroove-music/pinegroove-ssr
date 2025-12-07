@@ -154,7 +154,11 @@ const Layout: React.FC = () => {
         </header>
 
         {/* Scrollable Page Content */}
-        <main ref={mainContentRef} className="flex-1 overflow-y-auto scroll-smooth relative">
+        <main 
+            id="main-content"
+            ref={mainContentRef} 
+            className="flex-1 overflow-y-auto scroll-smooth relative"
+        >
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/library" element={<Library />} />

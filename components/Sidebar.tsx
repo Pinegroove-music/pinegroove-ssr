@@ -39,6 +39,16 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
     ));
   };
 
+  const handleLogoClick = () => {
+    setMobileOpen(false);
+    const mainContainer = document.getElementById('main-content');
+    if (mainContainer) {
+        mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -52,7 +62,11 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
       <aside className={sidebarClasses}>
         {/* Header - Left Aligned to match nav items (pl-3) */}
         <div className={`py-6 pl-3 pr-3 flex items-center relative h-20 ${collapsed ? 'justify-center pl-0 pr-0' : ''}`}>
-          <Link to="/" className="flex items-center gap-1 group overflow-hidden">
+          <Link 
+            to="/" 
+            onClick={handleLogoClick}
+            className="flex items-center gap-1 group overflow-hidden"
+          >
             {/* Custom Logo - Rotate on Hover */}
             <img 
                 src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/logo-pinegroove.svg?v=2" 
@@ -60,8 +74,8 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
                 className="w-12 h-12 object-contain transition-transform duration-500 group-hover:rotate-12 flex-shrink-0"
             />
             {!collapsed && (
-                // Text - Progressive Illumination
-                <span className="uppercase font-bold text-2xl tracking-tight origin-left whitespace-nowrap flex">
+                // Text - Progressive Illumination with Archivo Black Font
+                <span className="font-archivo uppercase text-xl tracking-tight origin-left whitespace-nowrap flex">
                     {renderProgressiveText("PINE", "text-black dark:text-white", 0)}
                     {renderProgressiveText("GROOVE", "text-[#0288c4]", 4)}
                 </span>

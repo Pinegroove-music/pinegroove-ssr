@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Youtube, Facebook, Instagram, Clapperboard, Mail, MapPin } from 'lucide-react';
@@ -22,6 +22,16 @@ export const Footer: React.FC = () => {
     { label: 'Seasonal Themes', path: '/categories/seasonal' },
   ];
 
+  const handleLogoClick = () => {
+    // Finds the main scrollable container defined in App.tsx by ID
+    const mainContainer = document.getElementById('main-content');
+    if (mainContainer) {
+        mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <footer className={`
         w-full pt-16 pb-32 px-6 border-t mt-auto
@@ -31,8 +41,12 @@ export const Footer: React.FC = () => {
         
         {/* Column 1: Brand */}
         <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-1 group w-fit">
-                <span className="uppercase font-bold text-xl tracking-tight">
+            <Link 
+                to="/" 
+                onClick={handleLogoClick}
+                className="flex items-center gap-1 group w-fit cursor-pointer"
+            >
+                <span className="font-archivo uppercase text-xl tracking-tight">
                     <span className="text-black dark:text-white">PINE</span>
                     <span className="text-[#0288c4]">GROOVE</span>
                 </span>
