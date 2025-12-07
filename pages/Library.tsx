@@ -61,7 +61,15 @@ export const Library: React.FC = () => {
         console.error("Error fetching tracks:", error);
         setTracks([]);
     } else if (data) {
-        let filteredData = data as MusicTrack[];
+        // Randomize the order (Fisher-Yates Shuffle)
+        // This ensures a different discovery experience every time
+        const allTracks = data as MusicTrack[];
+        for (let i = allTracks.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allTracks[i], allTracks[j]] = [allTracks[j], allTracks[i]];
+        }
+
+        let filteredData = allTracks;
 
         // Extract unique instruments from ALL fetched data (before filtering)
         // logic: calculate frequency (popularity) and sort descending
@@ -208,6 +216,26 @@ export const Library: React.FC = () => {
       } else {
           window.scrollTo({ top: 0, behavior: 'smooth' });
       }
+  };
+
+  // Helper to generate pagination numbers with ellipses
+  const generatePagination = () => {
+    // If we have 7 or fewer pages, just show all of them
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    // Logic to show 1 ... current ... last
+    if (currentPage <= 4) {
+        // Start: 1, 2, 3, 4, 5, ..., last
+        return [1, 2, 3, 4, 5, '...', totalPages];
+    } else if (currentPage >= totalPages - 3) {
+        // End: 1, ..., last-4, last-3, last-2, last-1, last
+        return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    } else {
+        // Middle: 1, ..., current-1, current, current+1, ..., last
+        return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+    }
   };
 
   const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedInstruments.length > 0 || selectedSeasons.length > 0 || bpmRange;
@@ -404,32 +432,28 @@ export const Library: React.FC = () => {
                     </button>
                     
                     <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                            let pageNum = i + 1;
-                            if (totalPages > 5 && currentPage > 3) {
-                                pageNum = currentPage - 2 + i;
-                                if (pageNum > totalPages) return null;
+                        {generatePagination().map((page, index) => {
+                            // If ellipsis
+                            if (page === '...') {
+                                return <span key={`ellipsis-${index}`} className="opacity-50 px-2 font-bold tracking-widest">...</span>;
                             }
-                            if (!pageNum) return null;
                             
+                            // Normal Page Number
                             return (
                                 <button
-                                    key={pageNum}
-                                    onClick={() => paginate(pageNum)}
+                                    key={`page-${page}`}
+                                    onClick={() => paginate(page as number)}
                                     className={`
                                         w-8 h-8 rounded-lg text-sm font-medium transition-all
-                                        ${currentPage === pageNum 
+                                        ${currentPage === page 
                                             ? 'bg-sky-600 text-white shadow-md' 
                                             : (isDarkMode ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-gray-100 text-zinc-600')}
                                     `}
                                 >
-                                    {pageNum}
+                                    {page}
                                 </button>
                             )
                         })}
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <span className="opacity-50 px-1">...</span>
-                        )}
                     </div>
 
                     <button 
