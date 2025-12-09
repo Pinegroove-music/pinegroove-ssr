@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { Play, Pause, ShoppingCart, Volume2, VolumeX, Volume1, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { WaveformVisualizer } from './WaveformVisualizer';
+import { createSlug } from '../utils/slugUtils';
 
 const formatTime = (time: number) => {
   if (!Number.isFinite(time) || isNaN(time)) return '0:00';
@@ -156,14 +157,12 @@ export const Player: React.FC = () => {
              className="h-full bg-sky-500 transition-all duration-100 ease-linear relative" 
              style={{ width: `${progress}%` }}
          >
-             {/* Draggable Thumb Hit Area (Only active when expanded) */}
              {!isMobileMinimized && (
                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-transparent rounded-full translate-x-1/2 pointer-events-auto"></div>
              )}
          </div>
       </div>
 
-      {/* Mobile Seek Input Overlay (Hidden when minimized) */}
       {!isMobileMinimized && (
           <input 
             type="range" 
@@ -176,7 +175,6 @@ export const Player: React.FC = () => {
           />
       )}
 
-      {/* MAIN PLAYER CONTENT - Fades out when minimized on mobile */}
       <div className={`
             flex w-full h-full items-center justify-between px-4
             transition-opacity duration-200
@@ -184,7 +182,6 @@ export const Player: React.FC = () => {
             md:opacity-100 md:pointer-events-auto
       `}>
 
-          {/* MOBILE SPECIFIC: Play Button (Left) */}
           <button 
             onClick={togglePlay}
             className={`md:hidden flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full mr-2 shadow-sm ${isDarkMode ? 'bg-zinc-800 text-white' : 'bg-black text-white'}`}
@@ -192,7 +189,6 @@ export const Player: React.FC = () => {
             {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1"/>}
           </button>
 
-          {/* 1. Track Info (Center on Mobile, Left on Desktop) */}
           <div className="flex flex-1 items-center justify-center md:justify-start gap-3 min-w-0 px-2 md:px-0 md:w-64 md:flex-none">
             <img 
               src={currentTrack.cover_url} 
@@ -200,7 +196,7 @@ export const Player: React.FC = () => {
               className="w-12 h-12 object-cover rounded shadow-sm hidden sm:block"
             />
             <div className="overflow-hidden min-w-0 w-full text-center md:text-left">
-              <Link to={`/track/${currentTrack.id}`} className="font-bold text-sm truncate block hover:text-sky-500 transition-colors">
+              <Link to={`/track/${createSlug(currentTrack.id, currentTrack.title)}`} className="font-bold text-sm truncate block hover:text-sky-500 transition-colors">
                 {currentTrack.title}
               </Link>
               <Link to={`/library?search=${encodeURIComponent(currentTrack.artist_name)}`} className="text-xs opacity-70 truncate block hover:underline">
@@ -209,7 +205,6 @@ export const Player: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. Desktop Main Controls: Play + Waveform + Timers (Center) */}
           <div className="hidden md:flex flex-1 items-center gap-4 min-w-0 justify-center">
               <button 
                 onClick={togglePlay}
@@ -223,7 +218,6 @@ export const Player: React.FC = () => {
                       {formatTime(currentTime)}
                   </span>
 
-                  {/* Interactive Waveform */}
                   <div className="relative flex-1 h-12 flex items-center group">
                         <div className="absolute inset-0 z-0 flex items-center">
                             <WaveformVisualizer 
@@ -234,7 +228,6 @@ export const Player: React.FC = () => {
                             />
                         </div>
                         
-                        {/* Invisible Overlay for Seek */}
                         <input 
                             type="range" 
                             min="0" 
@@ -251,17 +244,14 @@ export const Player: React.FC = () => {
                         />
                   </div>
 
-                  {/* Remaining Time */}
                   <span className="text-xs font-mono opacity-50 min-w-[40px]">
                       -{formatTime(remainingTime)}
                   </span>
               </div>
           </div>
 
-          {/* 3. Volume & License (Right) */}
           <div className="flex items-center gap-4 flex-shrink-0">
             
-            {/* Desktop Volume */}
             <div className="hidden md:flex items-center gap-2 group relative">
                 <button onClick={toggleMute} className="opacity-60 hover:opacity-100 transition p-2">
                     <VolumeIcon size={20} />
@@ -279,7 +269,6 @@ export const Player: React.FC = () => {
                 </div>
             </div>
 
-            {/* Desktop Buy Button */}
             {currentTrack.gumroad_link && (
                 <a 
                     href={currentTrack.gumroad_link}
@@ -290,15 +279,11 @@ export const Player: React.FC = () => {
                 </a>
             )}
 
-            {/* Mobile Right Group: Duration, Cart & Minimize */}
             <div className="md:hidden flex items-center gap-2">
-                
-                {/* Duration */}
                 <div className="text-xs font-mono opacity-60">
                     {duration ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` : '-'}
                 </div>
 
-                {/* Cart Button */}
                 {currentTrack.gumroad_link && (
                     <a 
                         href={currentTrack.gumroad_link}
@@ -309,7 +294,6 @@ export const Player: React.FC = () => {
                     </a>
                 )}
 
-                {/* Minimize Button (Expanded State) */}
                 <button 
                     onClick={() => setIsMobileMinimized(true)}
                     className="p-1 opacity-60 hover:opacity-100"

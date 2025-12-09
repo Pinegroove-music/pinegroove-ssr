@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { Album, MusicTrack } from '../types';
 import { useStore } from '../store/useStore';
 import { ShoppingCart, Disc, Play, Pause, Check, ArrowLeft, AlertTriangle, Sparkles, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 import { SEO } from '../components/SEO';
+import { getIdFromSlug, createSlug } from '../utils/slugUtils';
 
 export const MusicPackDetail: React.FC = () => {
-  const { id } = useParams();
+  const { slug } = useParams(); // Changed id to slug
   const [album, setAlbum] = useState<Album | null>(null);
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [relatedPacks, setRelatedPacks] = useState<Album[]>([]);
@@ -18,8 +18,10 @@ export const MusicPackDetail: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    // Extract ID from slug
+    const id = getIdFromSlug(slug);
+
     if (id) {
-      // Scroll to top when ID changes (navigation from related packs)
       window.scrollTo(0, 0);
 
       const fetchData = async () => {
@@ -35,7 +37,7 @@ export const MusicPackDetail: React.FC = () => {
             if (albumError) throw albumError;
             setAlbum(albumData);
 
-            // 2. Fetch Junction Table (album_tracks)
+            // 2. Fetch Junction Table
             const { data: junctionData, error: junctionError } = await supabase
                 .from('album_tracks')
                 .select('track_id, track_order')
@@ -45,10 +47,8 @@ export const MusicPackDetail: React.FC = () => {
             if (junctionError) throw junctionError;
 
             if (junctionData && junctionData.length > 0) {
-                // Extract track IDs
                 const trackIds = junctionData.map(j => j.track_id);
                 
-                // 3. Fetch Actual Music Tracks
                 const { data: tracksData, error: tracksError } = await supabase
                     .from('music_tracks')
                     .select('*')
@@ -56,7 +56,6 @@ export const MusicPackDetail: React.FC = () => {
 
                 if (tracksError) throw tracksError;
 
-                // 4. Sort tracks based on the order in junction table
                 if (tracksData) {
                     const sortedTracks = junctionData.map(j => 
                         tracksData.find(t => t.id === j.track_id)
@@ -68,14 +67,13 @@ export const MusicPackDetail: React.FC = () => {
                 setTracks([]);
             }
 
-            // 5. Fetch Related Packs (Random 4, excluding current)
+            // 3. Fetch Related Packs
             const { data: otherPacks } = await supabase
                 .from('album')
                 .select('*')
                 .neq('id', id);
             
             if (otherPacks) {
-                // Shuffle array and take first 4
                 const shuffled = [...otherPacks].sort(() => 0.5 - Math.random());
                 setRelatedPacks(shuffled.slice(0, 4));
             }
@@ -89,7 +87,7 @@ export const MusicPackDetail: React.FC = () => {
       };
       fetchData();
     }
-  }, [id]);
+  }, [slug]);
 
   if (loading) return <div className="p-20 text-center opacity-50">Loading album...</div>;
   if (errorMsg) return (
@@ -105,7 +103,6 @@ export const MusicPackDetail: React.FC = () => {
     ? `Buy ${album.title} Music Pack. ${album.description.substring(0, 100)}...`
     : `Buy ${album.title}, a premium collection of royalty free music tracks by Francesco Biondi.`;
 
-  // Logic for playing the first track
   const firstTrack = tracks.length > 0 ? tracks[0] : null;
   const isPlayingFirstTrack = firstTrack && currentTrack?.id === firstTrack.id && isPlaying;
 
@@ -123,22 +120,18 @@ export const MusicPackDetail: React.FC = () => {
         <ArrowLeft size={16} /> Back to Music Packs
       </Link>
 
-      {/* Header */}
       <div className="flex flex-col lg:flex-row gap-12 mb-16 items-start">
          
-         {/* Album Cover with Play Overlay */}
          <div 
             className="w-full lg:w-[400px] aspect-square rounded-3xl overflow-hidden shadow-2xl flex-shrink-0 relative bg-zinc-200 dark:bg-zinc-800 group cursor-pointer"
             onClick={handleAlbumPlay}
          >
             <img src={album.cover_url} alt={album.title} className="w-full h-full object-cover" />
             
-            {/* Price Tag */}
             <div className="absolute top-4 right-4 bg-sky-500 text-white font-bold px-4 py-2 rounded-full shadow-lg text-lg z-20">
                 ${(album.price / 100).toFixed(2)}
             </div>
 
-            {/* Play Button Overlay */}
             {firstTrack && (
                 <div className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-300 z-10 ${isPlayingFirstTrack ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                     <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/50 shadow-lg transition-transform transform group-hover:scale-110">
@@ -184,7 +177,6 @@ export const MusicPackDetail: React.FC = () => {
          </div>
       </div>
 
-      {/* Track List */}
       <div className={`rounded-3xl p-6 md:p-10 ${isDarkMode ? 'bg-zinc-900/50' : 'bg-gray-50'}`}>
         <h3 className="text-2xl font-bold mb-8 flex items-center gap-3">
             <span>Included Tracks</span>
@@ -208,7 +200,6 @@ export const MusicPackDetail: React.FC = () => {
                                 ${active ? 'ring-1 ring-sky-500 bg-sky-50 dark:bg-sky-900/20' : ''}
                             `}
                         >
-                            {/* Track Order - Hidden on Mobile */}
                             <div className="hidden md:block w-8 text-center opacity-40 font-mono text-sm">{index + 1}</div>
                             
                             <div 
@@ -221,9 +212,8 @@ export const MusicPackDetail: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Info Section - Fixed width on desktop to allow waveform to expand */}
                             <div className="flex-1 md:flex-none md:w-64 min-w-0 px-2">
-                                <Link to={`/track/${track.id}`} className={`font-bold text-lg truncate block ${active ? 'text-sky-600 dark:text-sky-400' : 'hover:text-sky-500'}`}>{track.title}</Link>
+                                <Link to={`/track/${createSlug(track.id, track.title)}`} className={`font-bold text-lg truncate block ${active ? 'text-sky-600 dark:text-sky-400' : 'hover:text-sky-500'}`}>{track.title}</Link>
                                 <div className="flex items-center gap-2">
                                     <Link 
                                         to={`/library?search=${encodeURIComponent(track.artist_name)}`} 
@@ -234,7 +224,6 @@ export const MusicPackDetail: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Desktop Waveform */}
                             <div className="hidden md:flex flex-1 h-10 items-center px-4 opacity-80">
                                 <WaveformVisualizer track={track} height="h-8" barCount={100} />
                             </div>
@@ -249,7 +238,6 @@ export const MusicPackDetail: React.FC = () => {
                                 ) : null}
                             </div>
 
-                            {/* Duration - Hidden on Mobile */}
                             <div className="hidden md:block w-16 text-right font-mono text-sm opacity-50">
                                 {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
                             </div>
@@ -260,7 +248,6 @@ export const MusicPackDetail: React.FC = () => {
         )}
       </div>
 
-      {/* Related Packs Section */}
       {relatedPacks.length > 0 && (
           <div className="mt-16 pt-12 border-t border-gray-200 dark:border-zinc-800">
              <h3 className="text-2xl font-bold mb-8 flex items-center gap-2">
@@ -275,8 +262,7 @@ export const MusicPackDetail: React.FC = () => {
                             ${isDarkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-100 shadow-md'}
                         `}
                     >
-                        {/* Cover Area */}
-                        <Link to={`/music-packs/${pack.id}`} className="w-full aspect-square relative overflow-hidden bg-zinc-200 dark:bg-zinc-800 block">
+                        <Link to={`/music-packs/${createSlug(pack.id, pack.title)}`} className="w-full aspect-square relative overflow-hidden bg-zinc-200 dark:bg-zinc-800 block">
                             <img 
                                 src={pack.cover_url} 
                                 alt={pack.title} 
@@ -284,10 +270,9 @@ export const MusicPackDetail: React.FC = () => {
                             />
                         </Link>
 
-                        {/* Content Area */}
                         <div className="p-4 flex flex-col flex-1">
                             <h4 className="font-bold text-lg mb-1 leading-tight group-hover:text-sky-500 transition-colors line-clamp-1">
-                                <Link to={`/music-packs/${pack.id}`}>{pack.title}</Link>
+                                <Link to={`/music-packs/${createSlug(pack.id, pack.title)}`}>{pack.title}</Link>
                             </h4>
                             
                             <div className="mt-auto pt-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between">
@@ -296,7 +281,7 @@ export const MusicPackDetail: React.FC = () => {
                                 </div>
                                 
                                 <Link 
-                                    to={`/music-packs/${pack.id}`}
+                                    to={`/music-packs/${createSlug(pack.id, pack.title)}`}
                                     className={`p-2 rounded-full transition ${isDarkMode ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-black'}`}
                                 >
                                     <ArrowRight size={16} />

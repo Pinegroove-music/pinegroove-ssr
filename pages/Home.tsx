@@ -6,6 +6,7 @@ import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, Shi
 import { Link, useNavigate } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 import { SEO } from '../components/SEO';
+import { createSlug } from '../utils/slugUtils';
 
 export const Home: React.FC = () => {
   const [discoverTracks, setDiscoverTracks] = useState<MusicTrack[]>([]);
@@ -17,11 +18,9 @@ export const Home: React.FC = () => {
   const { isDarkMode, playTrack, currentTrack, isPlaying } = useStore();
   const navigate = useNavigate();
   
-  // Suggestion State
-  const [suggestions, setSuggestions] = useState<{type: 'track' | 'artist', text: string}[]>([]);
+  const [suggestions, setSuggestions] = useState<{type: 'track' | 'artist', text: string, id?: number}[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
-  // Refs
   const clientsScrollRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLFormElement>(null);
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,7 +30,6 @@ export const Home: React.FC = () => {
     'Acoustic', 'Folk', 'Hip Hop', 'Jazz', 'Classical', 'Funk'
   ];
 
-  // Elegant Blue/Purple Gradients matching GenresPage
   const gradients = [
     'bg-gradient-to-br from-sky-500 to-blue-600',
     'bg-gradient-to-br from-blue-500 to-indigo-600',
@@ -41,107 +39,77 @@ export const Home: React.FC = () => {
     'bg-gradient-to-br from-blue-600 to-violet-700',
   ];
 
-  // Helper to determine seasonal keywords based on current month
   const getCurrentSeasonalKeywords = () => {
-    const month = new Date().getMonth(); // 0 = Jan, 11 = Dec
+    const month = new Date().getMonth();
     
     switch (month) {
-        case 9: // October
-            return ['Halloween', 'Autumn', 'Spooky', 'Dark'];
-        case 10: // November
-        case 11: // December
-            return ['Christmas', 'Holiday', 'Winter', 'Xmas', 'Jingle'];
-        case 0: // January
-            return ['Winter', 'Ramadan', "Valentine's Day", 'New Year'];
-        case 1: // February
-        case 2: // March
-            return ["Valentine's Day", 'Holi', "St. Patrick's Day", 'Spring'];
-        case 3: // April
-        case 4: // May
-            return ['Spring', 'Cinco de Mayo', 'Memorial Day'];
-        case 5: // June
-        case 6: // July
-        case 7: // August
-            return ['Summer', 'Party', 'Beach', 'Sunny'];
-        default: // September (Fallback)
-            return ['Autumn'];
+        case 9: return ['Halloween', 'Autumn', 'Spooky', 'Dark'];
+        case 10: 
+        case 11: return ['Christmas', 'Holiday', 'Winter', 'Xmas', 'Jingle'];
+        case 0: return ['Winter', 'Ramadan', "Valentine's Day", 'New Year'];
+        case 1: 
+        case 2: return ["Valentine's Day", 'Holi', "St. Patrick's Day", 'Spring'];
+        case 3: 
+        case 4: return ['Spring', 'Cinco de Mayo', 'Memorial Day'];
+        case 5: 
+        case 6: 
+        case 7: return ['Summer', 'Party', 'Beach', 'Sunny'];
+        default: return ['Autumn'];
     }
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Fetch random tracks for discover (randomized on client)
-      // Fetching a larger pool to enable client-side random sorting and filtering
       const { data: allTracks } = await supabase.from('music_tracks').select('*').limit(200);
       
       if (allTracks) {
-        // --- DISCOVER SECTION ---
         const shuffled = [...allTracks].sort(() => 0.5 - Math.random());
         setDiscoverTracks(shuffled.slice(0, 12));
 
-        // --- TRENDING / SEASONAL SECTION ---
         const seasonKeywords = getCurrentSeasonalKeywords();
         const keywordsLower = seasonKeywords.map(k => k.toLowerCase());
 
-        // Robust Filtering: Check Season Col, Tags (Array), Title, and Moods
         const seasonalMatches = allTracks.filter(track => {
-            // Check 'season' column - Handle String or Array safely
             if (track.season) {
                 if (typeof track.season === 'string') {
                     if (keywordsLower.includes(track.season.toLowerCase())) return true;
                 } else if (Array.isArray(track.season)) {
-                    // Check if any element in the array matches keywords
                     if (track.season.some((s: any) => typeof s === 'string' && keywordsLower.includes(s.toLowerCase()))) return true;
                 }
             }
-            
-            // Check 'tags' array
             if (track.tags && Array.isArray(track.tags)) {
                 if (track.tags.some(tag => keywordsLower.some(k => tag.toLowerCase().includes(k)))) return true;
             }
-
-            // Check title
             if (keywordsLower.some(k => track.title.toLowerCase().includes(k))) return true;
-
-            // Check 'mood' array
             if (track.mood && Array.isArray(track.mood)) {
                 if (track.mood.some(m => keywordsLower.includes(m.toLowerCase()))) return true;
             }
-
             return false;
         });
 
         let finalTrending = seasonalMatches;
 
-        // If not enough seasonal tracks, fill with random tracks from the remaining pool
         if (finalTrending.length < 10) {
             const usedIds = new Set(finalTrending.map(t => t.id));
             const remaining = allTracks.filter(t => !usedIds.has(t.id));
-            // Shuffle remaining to keep trending interesting
             const shuffledRemaining = remaining.sort(() => 0.5 - Math.random());
-            
             finalTrending = [...finalTrending, ...shuffledRemaining.slice(0, 10 - finalTrending.length)];
         } else {
-            // If too many seasonal, shuffle and take 10
             finalTrending = finalTrending.sort(() => 0.5 - Math.random()).slice(0, 10);
         }
 
         setTrendingTracks(finalTrending);
       }
 
-      // 3. Fetch clients
       const { data: clientData } = await supabase.from('clients').select('*');
       if (clientData) setClients(clientData);
 
-      // 4. Fetch random featured pack
       const { data: packs } = await supabase.from('album').select('*').limit(20);
       if (packs && packs.length > 0) {
         const randomPack = packs[Math.floor(Math.random() * packs.length)];
         setFeaturedPack(randomPack);
       }
 
-      // 5. Fetch Media Themes (Randomize)
-      // Fetch all themes first, then shuffle and slice client-side
       const { data: themes } = await supabase.from('media_theme').select('*');
       if (themes && themes.length > 0) {
         const shuffledThemes = [...themes].sort(() => 0.5 - Math.random());
@@ -152,7 +120,6 @@ export const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  // Clients Carousel Animation Logic (Move... Stop... Move...)
   useEffect(() => {
     if (clients.length === 0) return;
 
@@ -160,29 +127,21 @@ export const Home: React.FC = () => {
         const container = clientsScrollRef.current;
         if (container) {
             const { scrollLeft, scrollWidth } = container;
-            const singleSetWidth = scrollWidth / 6; // We duplicated clients 6 times
+            const singleSetWidth = scrollWidth / 6; 
             
-            // Seamless Loop Check:
-            // If we have scrolled past 3 full sets, reset back by 1 set instantly.
-            // This keeps the scroll position in a safe middle zone without the user noticing.
             if (scrollLeft >= singleSetWidth * 3) {
                 container.scrollLeft = scrollLeft - singleSetWidth;
             }
 
-            // Move by roughly one item + gap
-            // Calculating dynamic width: First item width + 64px gap (gap-16)
             const item = container.firstElementChild?.firstElementChild as HTMLElement;
             const moveAmount = item ? item.offsetWidth + 64 : 200;
-
-            // Perform the smooth scroll
             container.scrollBy({ left: moveAmount, behavior: 'smooth' });
         }
-    }, 2500); // 2.5 seconds pause between moves
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [clients]);
 
-  // Click Outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
         if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
@@ -194,7 +153,6 @@ export const Home: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch Suggestions Logic
   useEffect(() => {
       if (debounceTimeoutRef.current) {
           clearTimeout(debounceTimeoutRef.current);
@@ -209,26 +167,23 @@ export const Home: React.FC = () => {
       debounceTimeoutRef.current = setTimeout(async () => {
           const query = searchQuery.trim();
           
-          // Parallel fetch for Titles and Artists
           const [titlesRes, artistsRes] = await Promise.all([
-             supabase.from('music_tracks').select('title').ilike('title', `%${query}%`).limit(4),
+             supabase.from('music_tracks').select('id, title').ilike('title', `%${query}%`).limit(4),
              supabase.from('music_tracks').select('artist_name').ilike('artist_name', `%${query}%`).limit(2)
           ]);
 
-          const newSuggestions: {type: 'track' | 'artist', text: string}[] = [];
+          const newSuggestions: {type: 'track' | 'artist', text: string, id?: number}[] = [];
           const uniqueKeys = new Set<string>();
 
-          // Add Titles
           if (titlesRes.data) {
               titlesRes.data.forEach(t => {
                   if (!uniqueKeys.has(t.title)) {
                       uniqueKeys.add(t.title);
-                      newSuggestions.push({ type: 'track', text: t.title });
+                      newSuggestions.push({ type: 'track', text: t.title, id: t.id });
                   }
               });
           }
 
-          // Add Artists
           if (artistsRes.data) {
               artistsRes.data.forEach(a => {
                   if (!uniqueKeys.has(a.artist_name)) {
@@ -241,7 +196,7 @@ export const Home: React.FC = () => {
           setSuggestions(newSuggestions);
           setShowSuggestions(newSuggestions.length > 0);
 
-      }, 300); // 300ms delay
+      }, 300);
 
       return () => {
           if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
@@ -258,28 +213,30 @@ export const Home: React.FC = () => {
     }
   };
 
-  const handleSuggestionClick = (text: string) => {
-      setSearchQuery(text);
-      handleSearch({ preventDefault: () => {} } as React.FormEvent, text);
+  const handleSuggestionClick = (item: {type: 'track' | 'artist', text: string, id?: number}) => {
+      if (item.type === 'track' && item.id) {
+          navigate(`/track/${createSlug(item.id, item.text)}`);
+          setSearchQuery('');
+          setShowSuggestions(false);
+      } else {
+          setSearchQuery(item.text);
+          handleSearch({ preventDefault: () => {} } as React.FormEvent, item.text);
+      }
   };
 
-  // Duplicate clients for infinite scroll loop (x6 to be safe)
   const displayClients = clients.length > 0 ? [...clients, ...clients, ...clients, ...clients, ...clients, ...clients] : [];
 
   return (
     <div className="space-y-16 pb-20">
       <SEO title="Royalty Free Music for Video" />
       
-      {/* Hero / Search */}
       <div className="relative py-28 px-4 text-center overflow-hidden">
-         {/* Background Image */}
          <div className="absolute inset-0 z-0">
             <img 
                 src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=2070&auto=format&fit=crop" 
                 alt="Home Studio Background" 
                 className="w-full h-full object-cover"
             />
-            {/* Overlay for readability */}
             <div className="absolute inset-0 bg-black/60 transition-colors duration-500"></div>
          </div>
 
@@ -306,7 +263,6 @@ export const Home: React.FC = () => {
               />
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 opacity-40 text-black" size={20} />
               
-              {/* Suggestions Dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-2 rounded-xl bg-white text-left shadow-2xl overflow-hidden z-50 border border-gray-100">
                     <ul>
@@ -314,7 +270,7 @@ export const Home: React.FC = () => {
                             <li key={index}>
                                 <button
                                     type="button"
-                                    onClick={() => handleSuggestionClick(item.text)}
+                                    onClick={() => handleSuggestionClick(item)}
                                     className="w-full text-left px-4 py-3 flex items-center gap-3 text-sm transition-colors hover:bg-sky-50 text-zinc-700 hover:text-sky-700"
                                 >
                                     <span className="opacity-50 text-zinc-400">
@@ -341,7 +297,6 @@ export const Home: React.FC = () => {
          </div>
       </div>
 
-      {/* Discover Section */}
       <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
           <span className="text-sky-500">✦</span> Discover New Music
@@ -351,7 +306,6 @@ export const Home: React.FC = () => {
               const active = currentTrack?.id === track.id && isPlaying;
               return (
                 <div key={track.id} className="group flex flex-col text-center">
-                    {/* Cover Image & Play Button */}
                     <div 
                         className="relative aspect-square rounded-xl overflow-hidden cursor-pointer shadow-md mb-3" 
                         onClick={() => playTrack(track)}
@@ -366,9 +320,8 @@ export const Home: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* Track Info & Link */}
                     <Link 
-                        to={`/track/${track.id}`} 
+                        to={`/track/${createSlug(track.id, track.title)}`} 
                         className="font-bold text-sm truncate block hover:text-sky-500 transition-colors"
                         title={track.title}
                     >
@@ -401,7 +354,6 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Features Grid */}
       <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-4">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
@@ -437,7 +389,6 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Browse By Genre Section */}
       <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 text-center">
         <h2 className="text-2xl font-bold mb-6 flex items-center justify-start gap-2">
           <span className="text-sky-500">✦</span> Browse By Genre
@@ -473,7 +424,6 @@ export const Home: React.FC = () => {
         </Link>
       </section>
 
-      {/* Featured Music Pack Section (Ambient Blur Effect) */}
       {featuredPack && (
         <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -481,7 +431,6 @@ export const Home: React.FC = () => {
             </h2>
             
             <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl group">
-                {/* 1. Ambient Background Layer */}
                 <div className="absolute inset-0 z-0">
                     <img 
                         src={featuredPack.cover_url} 
@@ -489,20 +438,16 @@ export const Home: React.FC = () => {
                         className="w-full h-full object-cover blur-[80px] scale-125 opacity-70 dark:opacity-50 brightness-75 transition-transform duration-[20s] ease-in-out group-hover:scale-150"
                         aria-hidden="true"
                     />
-                    {/* Gradient Overlay for text readability */}
                     <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
                 </div>
 
-                {/* 2. Content Layer */}
                 <div className="relative z-10 p-8 md:p-14 flex flex-col md:flex-row items-center gap-10 md:gap-16">
-                    {/* Sharp Cover Image */}
                     <img 
                         src={featuredPack.cover_url} 
                         alt={featuredPack.title} 
                         className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-xl shadow-2xl rotate-3 group-hover:rotate-0 transition-all duration-500 border border-white/10"
                     />
 
-                    {/* Text & Actions */}
                     <div className="text-center md:text-left text-white flex-1">
                         <div className="inline-block px-3 py-1 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-xs font-bold uppercase tracking-widest mb-4">
                             Premium Collection
@@ -511,7 +456,6 @@ export const Home: React.FC = () => {
                             {featuredPack.title}
                         </h3>
                         
-                        {/* Description */}
                         {featuredPack.description && (
                             <p className="text-lg opacity-80 mb-8 max-w-2xl mx-auto md:mx-0 font-medium leading-relaxed drop-shadow-sm line-clamp-3">
                                 {featuredPack.description}
@@ -520,7 +464,7 @@ export const Home: React.FC = () => {
                         
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                             <Link 
-                                to={`/music-packs/${featuredPack.id}`} 
+                                to={`/music-packs/${createSlug(featuredPack.id, featuredPack.title)}`} 
                                 className="bg-white text-black hover:bg-gray-100 px-8 py-3.5 rounded-full font-bold transition-all transform hover:-translate-y-1 shadow-lg hover:shadow-xl flex items-center gap-2"
                             >
                                 <Disc size={20}/> View Pack
@@ -538,7 +482,6 @@ export const Home: React.FC = () => {
         </section>
       )}
 
-      {/* Media Themes Section (New - Randomized) */}
       {mediaThemes.length > 0 && (
         <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -570,10 +513,8 @@ export const Home: React.FC = () => {
         </section>
       )}
 
-      {/* Trending Section */}
       <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10">
         <h2 className="text-2xl font-bold mb-6">Trending Now</h2>
-        {/* Changed layout to 2 columns (grid-cols-1 lg:grid-cols-2) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {trendingTracks.map((track) => {
              const isCurrent = currentTrack?.id === track.id;
@@ -586,7 +527,6 @@ export const Home: React.FC = () => {
                   ${isCurrent && isPlaying ? 'border-sky-500' : ''}
                 `}
               >
-                {/* Cover & Play */}
                 <div 
                     className="relative w-12 h-12 flex-shrink-0 cursor-pointer rounded overflow-hidden"
                     onClick={() => playTrack(track)}
@@ -597,9 +537,8 @@ export const Home: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Info - Takes available space on mobile (flex-1), Fixed Width on Desktop */}
                 <div className="flex-1 min-w-0 sm:flex-none sm:w-48 lg:w-40 xl:w-64">
-                  <Link to={`/track/${track.id}`} className="font-bold truncate block hover:text-sky-500">{track.title}</Link>
+                  <Link to={`/track/${createSlug(track.id, track.title)}`} className="font-bold truncate block hover:text-sky-500">{track.title}</Link>
                   <div className="flex items-center gap-2 text-xs opacity-70">
                     <span className="truncate">{track.artist_name}</span>
                     {track.genre && track.genre.length > 0 && (
@@ -611,12 +550,10 @@ export const Home: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Waveform - Takes remaining space on desktop, Hidden on mobile */}
                 <div className="hidden sm:flex flex-1 h-full items-center px-4">
                     <WaveformVisualizer track={track} height="h-8" barCount={80} />
                 </div>
 
-                {/* Right Group (Duration + Cart) */}
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 flex-shrink-0 ml-auto">
                     <div className="text-sm font-mono opacity-60 text-right whitespace-nowrap hidden sm:block">
                         {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
@@ -640,11 +577,9 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Gumroad Subscribe Section */}
       <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
         <div className={`relative overflow-hidden rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-xl'}`}>
 
-            {/* Background Icon */}
             <div className="absolute -right-16 -bottom-16 pointer-events-none">
                 <img
                     src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/gumroad-icon.svg"
@@ -678,7 +613,6 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Meet the Composer Section */}
       <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-8">
         <div className={`relative overflow-hidden rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center gap-10 ${isDarkMode ? 'bg-black border border-zinc-800' : 'bg-zinc-900 text-white'}`}>
             
@@ -708,17 +642,14 @@ export const Home: React.FC = () => {
                         alt="Francesco Biondi" 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    {/* Overlay gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
                 </div>
                 
-                {/* Decorative elements behind */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-sky-500/20 blur-[80px] rounded-full -z-10 pointer-events-none"></div>
             </div>
         </div>
       </section>
 
-      {/* Clients Carousel (Infinite Move-Stop-Move Animation) */}
       <section className="w-full max-w-[1920px] mx-auto px-6 lg:px-10 py-10 overflow-hidden">
         <h3 className="text-center text-sm uppercase tracking-widest opacity-50 mb-8 font-bold">Trusted By</h3>
         
@@ -740,7 +671,6 @@ export const Home: React.FC = () => {
                 </div>
             </div>
         ) : (
-            // Fallback skeleton
             <div className="flex justify-center flex-wrap gap-16 items-center">
                 {[1,2,3,4,5].map(i => <div key={i} className="h-8 w-32 bg-current rounded animate-pulse opacity-20"></div>)}
             </div>

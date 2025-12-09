@@ -20,6 +20,7 @@ import { useStore } from './store/useStore';
 import { Menu, Search, Music, User, X } from 'lucide-react';
 import { SEO } from './components/SEO';
 import { supabase } from './services/supabase';
+import { createSlug } from './utils/slugUtils';
 
 const Layout: React.FC = () => {
   const { isDarkMode } = useStore();
@@ -28,7 +29,7 @@ const Layout: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   
   // Suggestion State
-  const [suggestions, setSuggestions] = useState<{type: 'track' | 'artist', text: string}[]>([]);
+  const [suggestions, setSuggestions] = useState<{type: 'track' | 'artist', text: string, id?: number}[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   const navigate = useNavigate();
@@ -93,11 +94,11 @@ const Layout: React.FC = () => {
           
           // Parallel fetch for Titles and Artists
           const [titlesRes, artistsRes] = await Promise.all([
-             supabase.from('music_tracks').select('title').ilike('title', `%${query}%`).limit(4),
+             supabase.from('music_tracks').select('id, title').ilike('title', `%${query}%`).limit(4),
              supabase.from('music_tracks').select('artist_name').ilike('artist_name', `%${query}%`).limit(2)
           ]);
 
-          const newSuggestions: {type: 'track' | 'artist', text: string}[] = [];
+          const newSuggestions: {type: 'track' | 'artist', text: string, id?: number}[] = [];
           const uniqueKeys = new Set<string>();
 
           // Add Titles
@@ -105,7 +106,7 @@ const Layout: React.FC = () => {
               titlesRes.data.forEach(t => {
                   if (!uniqueKeys.has(t.title)) {
                       uniqueKeys.add(t.title);
-                      newSuggestions.push({ type: 'track', text: t.title });
+                      newSuggestions.push({ type: 'track', text: t.title, id: t.id });
                   }
               });
           }
@@ -137,14 +138,21 @@ const Layout: React.FC = () => {
     if (queryToUse.trim()) {
       setShowSuggestions(false);
       navigate(`/library?search=${encodeURIComponent(queryToUse)}`);
-      // Optional: keep text in search bar or clear it? Usually keeping it is better UX.
       setGlobalSearch(queryToUse);
     }
   };
 
-  const handleSuggestionClick = (text: string) => {
-      setGlobalSearch(text);
-      handleGlobalSearch({ preventDefault: () => {} } as React.FormEvent, text);
+  const handleSuggestionClick = (item: {type: 'track' | 'artist', text: string, id?: number}) => {
+      if (item.type === 'track' && item.id) {
+          // If clicking a specific track suggestion, go directly to track page with slug
+          navigate(`/track/${createSlug(item.id, item.text)}`);
+          setGlobalSearch('');
+          setShowSuggestions(false);
+      } else {
+          // Otherwise search library
+          setGlobalSearch(item.text);
+          handleGlobalSearch({ preventDefault: () => {} } as React.FormEvent, item.text);
+      }
   };
 
   // Determine pages configuration
@@ -239,7 +247,7 @@ const Layout: React.FC = () => {
                                 <li key={index}>
                                     <button
                                         type="button"
-                                        onClick={() => handleSuggestionClick(item.text)}
+                                        onClick={() => handleSuggestionClick(item)}
                                         className={`
                                             w-full text-left px-4 py-3 flex items-center gap-3 text-sm transition-colors
                                             ${isDarkMode ? 'hover:bg-zinc-800 text-zinc-300 hover:text-white' : 'hover:bg-sky-50 text-zinc-700 hover:text-sky-700'}
@@ -271,9 +279,10 @@ const Layout: React.FC = () => {
             <Route path="/categories/moods" element={<MoodsPage />} />
             <Route path="/categories/seasonal" element={<SeasonalPage />} />
             <Route path="/categories/instruments" element={<InstrumentsPage />} />
-            <Route path="/track/:id" element={<TrackDetail />} />
+            {/* Updated Routes to use :slug */}
+            <Route path="/track/:slug" element={<TrackDetail />} />
             <Route path="/music-packs" element={<MusicPacks />} />
-            <Route path="/music-packs/:id" element={<MusicPackDetail />} />
+            <Route path="/music-packs/:slug" element={<MusicPackDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<Faq />} />
             <Route path="/content-id" element={<ContentId />} />

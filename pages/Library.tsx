@@ -6,6 +6,7 @@ import { Play, Pause, ShoppingCart, Filter, ChevronDown, ChevronRight, ArrowRigh
 import { Link, useSearchParams } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 import { SEO } from '../components/SEO';
+import { createSlug } from '../utils/slugUtils';
 
 export const Library: React.FC = () => {
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
@@ -14,14 +15,10 @@ export const Library: React.FC = () => {
   const { isDarkMode } = useStore();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   
-  // View Mode State: 'list' or 'grid'
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 25; // Same limit for both views
+  const itemsPerPage = 25; 
 
-  // Filters State
   const initialSearch = searchParams.get('search') || '';
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -30,7 +27,6 @@ export const Library: React.FC = () => {
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [bpmRange, setBpmRange] = useState<'slow' | 'medium' | 'fast' | null>(null);
 
-  // Dynamic lists from DB
   const [availableInstruments, setAvailableInstruments] = useState<string[]>([]);
 
   useEffect(() => {
@@ -40,12 +36,10 @@ export const Library: React.FC = () => {
       }
   }, [searchParams]);
 
-  // Main Filter Categories (Static for Genres/Moods/Seasons as per previous design, instruments will be dynamic)
   const genres = ['Cinematic', 'Corporate', 'Ambient', 'Rock', 'Pop', 'Electronic', 'Acoustic', 'Folk', 'Hip Hop', 'Jazz'];
   const moods = ['Inspiring', 'Happy', 'Dark', 'Emotional', 'Dramatic', 'Peaceful', 'Energetic', 'Corporate', 'Uplifting', 'Sad'];
   const seasons = ['Spring', 'Summer', 'Autumn', 'Winter', 'Christmas', 'Halloween'];
   
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
     fetchTracks();
@@ -54,15 +48,12 @@ export const Library: React.FC = () => {
   const fetchTracks = async () => {
     setLoading(true);
     
-    // 1. Fetch raw data
     const { data, error } = await supabase.from('music_tracks').select('*').limit(1000);
     
     if (error) {
         console.error("Error fetching tracks:", error);
         setTracks([]);
     } else if (data) {
-        // Randomize the order (Fisher-Yates Shuffle)
-        // This ensures a different discovery experience every time
         const allTracks = data as MusicTrack[];
         for (let i = allTracks.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -71,8 +62,6 @@ export const Library: React.FC = () => {
 
         let filteredData = allTracks;
 
-        // Extract unique instruments from ALL fetched data (before filtering)
-        // logic: calculate frequency (popularity) and sort descending
         if (availableInstruments.length === 0) {
             const instrumentCounts: Record<string, number> = {};
 
@@ -91,15 +80,13 @@ export const Library: React.FC = () => {
                 }
             });
 
-            // Convert map to array, sort by count (desc), then take name
             const sortedInstruments = Object.entries(instrumentCounts)
-                .sort((a, b) => b[1] - a[1]) // Sort by frequency desc
+                .sort((a, b) => b[1] - a[1])
                 .map(entry => entry[0]);
 
             setAvailableInstruments(sortedInstruments);
         }
 
-        // 2. Apply Filters in Memory with ROBUST LOGIC
         const normalize = (val: any) => String(val).toLowerCase().trim();
 
         const checkFilterMatch = (trackAttribute: string[] | string | null | undefined, selectedFilters: string[]) => {
@@ -132,28 +119,24 @@ export const Library: React.FC = () => {
                 return terms.some(t => trackString.includes(t));
             });
 
-            // SORT BY RELEVANCE: Title Match Priority
             filteredData.sort((a, b) => {
                 const titleA = a.title.toLowerCase();
                 const titleB = b.title.toLowerCase();
 
-                // 1. Exact Title Match (Highest Priority)
                 if (titleA === fullTerm && titleB !== fullTerm) return -1;
                 if (titleB === fullTerm && titleA !== fullTerm) return 1;
 
-                // 2. Title Starts With Search Term
                 const aStarts = titleA.startsWith(fullTerm);
                 const bStarts = titleB.startsWith(fullTerm);
                 if (aStarts && !bStarts) return -1;
                 if (!aStarts && bStarts) return 1;
 
-                // 3. Title Contains Search Term
                 const aContains = titleA.includes(fullTerm);
                 const bContains = titleB.includes(fullTerm);
                 if (aContains && !bContains) return -1;
                 if (!aContains && bContains) return 1;
 
-                return 0; // Maintain shuffled order for others
+                return 0; 
             });
         }
 
@@ -185,14 +168,12 @@ export const Library: React.FC = () => {
   };
 
   const findSimilar = (track: MusicTrack) => {
-      // Clear existing filters
       setSearchTerm('');
       setSelectedSeasons([]);
       setSelectedInstruments([]);
       setBpmRange(null);
       setSearchParams({});
 
-      // 1. Extract and set Genres (Max 3)
       let newGenres: string[] = [];
       if (Array.isArray(track.genre)) {
           newGenres = track.genre.slice(0, 3);
@@ -201,7 +182,6 @@ export const Library: React.FC = () => {
       }
       setSelectedGenres(newGenres);
 
-      // 2. Extract and set Moods (Max 3)
       let newMoods: string[] = [];
       if (Array.isArray(track.mood)) {
           newMoods = track.mood.slice(0, 3);
@@ -210,7 +190,6 @@ export const Library: React.FC = () => {
       }
       setSelectedMoods(newMoods);
 
-      // Scroll top
       const mainContainer = document.querySelector('main');
       if (mainContainer) {
           mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
@@ -244,29 +223,21 @@ export const Library: React.FC = () => {
       }
   };
 
-  // Helper to generate pagination numbers with ellipses
   const generatePagination = () => {
-    // If we have 7 or fewer pages, just show all of them
     if (totalPages <= 7) {
         return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-
-    // Logic to show 1 ... current ... last
     if (currentPage <= 4) {
-        // Start: 1, 2, 3, 4, 5, ..., last
         return [1, 2, 3, 4, 5, '...', totalPages];
     } else if (currentPage >= totalPages - 3) {
-        // End: 1, ..., last-4, last-3, last-2, last-1, last
         return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
     } else {
-        // Middle: 1, ..., current-1, current, current+1, ..., last
         return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
     }
   };
 
   const hasActiveFilters = searchTerm || selectedGenres.length > 0 || selectedMoods.length > 0 || selectedInstruments.length > 0 || selectedSeasons.length > 0 || bpmRange;
 
-  // Dynamic SEO Title Generator
   const getPageTitle = () => {
       if (searchTerm) return `"${searchTerm}" Search Results`;
       if (selectedGenres.length > 0) return `${selectedGenres.join(', ')} Royalty Free Music`;
@@ -280,7 +251,6 @@ export const Library: React.FC = () => {
     <div className="flex flex-col lg:flex-row lg:items-start relative">
       <SEO title={getPageTitle()} description={`Browse our library of ${tracks.length} high-quality royalty-free music tracks.`} />
       
-      {/* Mobile Filter Toggle */}
       <button 
         className="lg:hidden m-4 p-3 bg-sky-600 text-white rounded-lg flex items-center justify-center gap-2"
         onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
@@ -288,7 +258,6 @@ export const Library: React.FC = () => {
         <Filter size={20}/> Filters
       </button>
 
-      {/* Sidebar Filters */}
       <div className={`
         lg:w-72 flex-shrink-0 p-6 border-r 
         ${mobileFiltersOpen ? 'block' : 'hidden lg:block'}
@@ -314,7 +283,6 @@ export const Library: React.FC = () => {
             isDark={isDarkMode}
         />
 
-        {/* New Instruments Filter */}
         {availableInstruments.length > 0 && (
             <CollapsibleFilterSection 
                 title="Instruments" 
@@ -358,7 +326,6 @@ export const Library: React.FC = () => {
             isDark={isDarkMode}
         />
 
-        {/* Active Filters Section */}
         {hasActiveFilters && (
             <div className={`mt-8 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${isDarkMode ? 'border-zinc-800 bg-black/20' : 'border-zinc-200 bg-zinc-50'}`}>
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-dashed border-gray-300 dark:border-zinc-700">
@@ -395,16 +362,13 @@ export const Library: React.FC = () => {
         )}
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 p-4 lg:p-8">
-        {/* Header with View Switcher */}
         <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
                  <h2 className="text-3xl font-bold">Library</h2>
                  {tracks.length > 0 && <span className="text-sm font-normal opacity-50 bg-gray-100 dark:bg-zinc-800 px-3 py-1 rounded-full">{tracks.length} Tracks</span>}
             </div>
 
-            {/* View Mode Switch */}
             <div className={`flex items-center p-1 rounded-lg border ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <button 
                     onClick={() => setViewMode('list')}
@@ -431,7 +395,6 @@ export const Library: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Content Area: List or Grid */}
             {viewMode === 'list' ? (
                 <div className="flex flex-col gap-3">
                     {currentTracks.map(track => (
@@ -446,7 +409,6 @@ export const Library: React.FC = () => {
                 </div>
             )}
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
                 <div className="mt-12 pb-40 flex justify-center items-center gap-2">
                     <button 
@@ -459,12 +421,9 @@ export const Library: React.FC = () => {
                     
                     <div className="flex items-center gap-1">
                         {generatePagination().map((page, index) => {
-                            // If ellipsis
                             if (page === '...') {
                                 return <span key={`ellipsis-${index}`} className="opacity-50 px-2 font-bold tracking-widest">...</span>;
                             }
-                            
-                            // Normal Page Number
                             return (
                                 <button
                                     key={`page-${page}`}
@@ -498,7 +457,6 @@ export const Library: React.FC = () => {
   );
 };
 
-// ... (ActiveFilterBadge and CollapsibleFilterSection remain unchanged) ...
 const ActiveFilterBadge: React.FC<{ label: string, onRemove: () => void, isDark: boolean }> = ({ label, onRemove, isDark }) => (
     <span className={`
         inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border shadow-sm
@@ -573,7 +531,6 @@ const CollapsibleFilterSection: React.FC<{
     );
 };
 
-// Standard List Item
 const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = ({ track, onFindSimilar }) => {
     const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
     const isCurrent = currentTrack?.id === track.id;
@@ -585,7 +542,6 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
             ${isDarkMode ? 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800' : 'bg-white border-zinc-200 shadow-sm hover:shadow-md border'}
             ${active ? 'ring-1 ring-sky-500/50' : ''}
         `}>
-            {/* Cover & Play Btn */}
             <div 
                 className="relative group w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer"
                 onClick={() => playTrack(track)}
@@ -596,9 +552,8 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </div>
             </div>
 
-            {/* Info */}
             <div className="flex-1 md:flex-none md:w-60 min-w-0">
-                <Link to={`/track/${track.id}`} className="font-bold text-base hover:text-sky-500 transition-colors block truncate">{track.title}</Link>
+                <Link to={`/track/${createSlug(track.id, track.title)}`} className="font-bold text-base hover:text-sky-500 transition-colors block truncate">{track.title}</Link>
                 <div className="flex items-center gap-2">
                     <Link to={`/library?search=${encodeURIComponent(track.artist_name)}`} className="text-xs opacity-70 hover:underline">{track.artist_name}</Link>
                     {track.lyrics && (
@@ -616,7 +571,6 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 </div>
             </div>
 
-            {/* Waveform - Made Interactive */}
             <div className="hidden md:flex flex-1 h-12 items-center px-2">
                 <WaveformVisualizer 
                     track={track} 
@@ -627,7 +581,6 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
                 />
             </div>
 
-            {/* Meta & Action */}
             <div className="flex items-center gap-4">
                 <div className="text-right text-xs opacity-60 font-mono hidden lg:block w-16">
                     <div>{track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '0:00'}</div>
@@ -654,7 +607,6 @@ const TrackItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = (
     )
 }
 
-// Grid View Item
 const TrackGridItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }> = ({ track, onFindSimilar }) => {
     const { playTrack, currentTrack, isPlaying, isDarkMode } = useStore();
     const isCurrent = currentTrack?.id === track.id;
@@ -665,7 +617,6 @@ const TrackGridItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }>
             group flex flex-col rounded-xl overflow-hidden border transition-all hover:shadow-xl hover:-translate-y-1
             ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}
         `}>
-            {/* Cover Image Area with Overlay Actions */}
             <div 
                 className="relative aspect-square cursor-pointer overflow-hidden group-hover:shadow-md"
             >
@@ -675,10 +626,8 @@ const TrackGridItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }>
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 />
                 
-                {/* Dark Overlay + Actions */}
                 <div className={`absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-3 transition-opacity duration-300 ${active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                     
-                    {/* Play Button (Center) */}
                     <button 
                         onClick={(e) => { e.stopPropagation(); playTrack(track); }}
                         className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
@@ -686,7 +635,6 @@ const TrackGridItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }>
                         {active ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1"/>}
                     </button>
                     
-                    {/* Action Buttons Row (Bottom of Overlay) */}
                     <div className="absolute bottom-4 flex gap-3">
                         <button 
                             onClick={(e) => { e.stopPropagation(); onFindSimilar && onFindSimilar(); }}
@@ -708,12 +656,10 @@ const TrackGridItem: React.FC<{ track: MusicTrack; onFindSimilar?: () => void }>
                 </div>
             </div>
 
-            {/* Simplified Content (Centered, No Footer) */}
             <div className="p-4 text-center">
-                <Link to={`/track/${track.id}`} className="font-bold text-sm truncate block hover:text-sky-500 transition-colors mb-1" title={track.title}>
+                <Link to={`/track/${createSlug(track.id, track.title)}`} className="font-bold text-sm truncate block hover:text-sky-500 transition-colors mb-1" title={track.title}>
                     {track.title}
                 </Link>
-                {/* Updated Artist Link: Blue hover, no underline */}
                 <Link 
                     to={`/library?search=${encodeURIComponent(track.artist_name)}`} 
                     className="text-xs opacity-60 truncate block transition-colors hover:text-sky-500"

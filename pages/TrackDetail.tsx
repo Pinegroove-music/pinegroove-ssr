@@ -6,9 +6,10 @@ import { useStore } from '../store/useStore';
 import { Play, Pause, ShoppingCart, Clock, Music2, Calendar, FileText, Package, ArrowRight, Sparkles, ChevronDown, ChevronUp, Mic2 } from 'lucide-react';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 import { SEO } from '../components/SEO';
+import { getIdFromSlug, createSlug } from '../utils/slugUtils';
 
 export const TrackDetail: React.FC = () => {
-  const { id } = useParams();
+  const { slug } = useParams(); // Changed from id to slug
   const [track, setTrack] = useState<MusicTrack | null>(null);
   const [relatedAlbum, setRelatedAlbum] = useState<Album | null>(null);
   const [recommendations, setRecommendations] = useState<MusicTrack[]>([]);
@@ -16,9 +17,12 @@ export const TrackDetail: React.FC = () => {
   const [showLyrics, setShowLyrics] = useState(false);
 
   useEffect(() => {
+    // Extract ID from the slug (e.g. "59-italian-story" -> "59")
+    const id = getIdFromSlug(slug);
+
     if (id) {
-      window.scrollTo(0, 0); // Ensure page starts at top when navigating between recommended tracks
-      setShowLyrics(false); // Reset lyrics state on track change
+      window.scrollTo(0, 0); 
+      setShowLyrics(false); 
       
       // 1. Fetch Track Details
       supabase.from('music_tracks').select('*').eq('id', id).single()
@@ -40,19 +44,16 @@ export const TrackDetail: React.FC = () => {
                     }
                 });
 
-            // 3. Fetch Recommendations (Similar Tracks)
-            // Priority: Overlapping Genres -> Overlapping Moods -> Any
+            // 3. Fetch Recommendations
             supabase.from('music_tracks').select('*').neq('id', trackData.id).limit(50)
                 .then(({ data: allOtherTracks }) => {
                     if (allOtherTracks) {
                         let scored = allOtherTracks.map(t => {
                             let score = 0;
-                            // Overlap Genres
                             if (trackData.genre && t.genre) {
                                 const intersection = trackData.genre.filter((g:string) => t.genre.includes(g));
                                 score += intersection.length * 2;
                             }
-                            // Overlap Moods (using 'mood' column)
                             if (trackData.mood && t.mood) {
                                 const intersection = trackData.mood.filter((m:string) => t.mood.includes(m));
                                 score += intersection.length;
@@ -60,23 +61,19 @@ export const TrackDetail: React.FC = () => {
                             return { track: t, score };
                         });
                         
-                        // Sort by score
                         scored.sort((a, b) => b.score - a.score);
-                        
-                        // Take top 4
                         setRecommendations(scored.slice(0, 4).map(s => s.track));
                     }
                 });
           }
         });
     }
-  }, [id]);
+  }, [slug]);
 
   if (!track) return <div className="p-20 text-center opacity-50">Loading track details...</div>;
 
   const active = currentTrack?.id === track.id && isPlaying;
 
-  // Helper to highlight description
   const formatDescription = (desc: string | null) => {
     if (!desc) return null;
     return desc.split('\n').map((line, i) => (
@@ -84,25 +81,15 @@ export const TrackDetail: React.FC = () => {
     ));
   };
 
-  // Robust SEO Description Generator
   const getSeoDescription = () => {
-    // 1. Get raw description
     let desc = track.description || "";
-    
-    // 2. Sanitize: Replace newlines with spaces, remove multiple spaces, AND REPLACE QUOTES
-    // Replacing double quotes with single quotes prevents HTML attribute breakage
     desc = desc.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').replace(/"/g, "'").trim();
-
-    // 3. Fallback if empty
     if (!desc) {
         return `Download ${track.title} by ${track.artist_name}. High-quality royalty-free music suitable for video editing, podcasts, and commercial projects.`;
     }
-
-    // 4. Truncate strictly to 100 characters as requested
     if (desc.length > 100) {
         return desc.substring(0, 100).trim() + "...";
     }
-    
     return desc;
   };
 
@@ -115,7 +102,6 @@ export const TrackDetail: React.FC = () => {
 
         <div className="flex flex-col md:flex-row gap-8 lg:gap-12 mb-12 items-start">
             
-            {/* Cover - Fixed aspect square */}
             <div className="w-full max-w-md md:w-80 lg:w-96 flex-shrink-0 aspect-square rounded-2xl overflow-hidden shadow-2xl relative group mx-auto md:mx-0">
                 <img src={track.cover_url} alt={track.title} className="w-full h-full object-cover" />
                 <button 
@@ -128,7 +114,6 @@ export const TrackDetail: React.FC = () => {
                 </button>
             </div>
 
-            {/* Info Header */}
             <div className="flex-1 flex flex-col justify-center w-full">
                 <div className="flex items-center gap-4 mb-2 opacity-70 text-sm font-bold uppercase tracking-wider">
                     <span className="bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300 px-2 py-1 rounded">{track.genre?.[0]}</span>
@@ -137,7 +122,6 @@ export const TrackDetail: React.FC = () => {
                 
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-2 tracking-tight">{track.title}</h1>
                 
-                {/* Clickable Artist Name */}
                 <h2 className="text-2xl mb-6 font-medium">
                     <Link 
                         to={`/library?search=${encodeURIComponent(track.artist_name)}`} 
@@ -147,9 +131,7 @@ export const TrackDetail: React.FC = () => {
                     </Link>
                 </h2>
 
-                {/* Big Visualizer with Play Button */}
                 <div className="h-32 w-full bg-zinc-50 dark:bg-zinc-900 rounded-xl mb-8 px-6 flex items-center gap-6 shadow-inner border border-zinc-200 dark:border-zinc-800">
-                    {/* Embedded Play Button */}
                     <button 
                         onClick={() => playTrack(track)}
                         className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition hover:scale-105 shadow-md ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}
@@ -157,7 +139,6 @@ export const TrackDetail: React.FC = () => {
                         {active ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1"/>}
                     </button>
 
-                    {/* Waveform takes remaining space */}
                     <div className="flex-1 h-full flex items-center">
                         <WaveformVisualizer 
                             track={track} 
@@ -181,16 +162,13 @@ export const TrackDetail: React.FC = () => {
         </div>
 
         <div className="grid md:grid-cols-3 gap-12 mb-20">
-            {/* Main Content Column */}
             <div className="md:col-span-2">
                 <h3 className="text-xl font-bold mb-4 border-b pb-2 border-sky-500/30 inline-block">About this track</h3>
                 <div className="prose dark:prose-invert opacity-90 leading-relaxed mb-8">
                     {formatDescription(track.description)}
                 </div>
 
-                {/* License Box (Redesigned) */}
                 <div className="bg-sky-50 dark:bg-sky-900/20 p-8 rounded-2xl border border-sky-100 dark:border-sky-800 mb-8 relative overflow-hidden group">
-                    {/* Background Icon - Gumroad */}
                     <img
                         src="https://pub-2da555791ab446dd9afa8c2352f4f9ea.r2.dev/media/gumroad-icon.svg"
                         alt="Gumroad"
@@ -209,7 +187,6 @@ export const TrackDetail: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Lyrics Section (Conditional) */}
                 {track.lyrics && (
                     <div className={`mb-8 rounded-xl border transition-all overflow-hidden ${isDarkMode ? 'bg-zinc-900/50 border-zinc-800' : 'bg-gray-50 border-gray-200'}`}>
                         <button 
@@ -232,7 +209,6 @@ export const TrackDetail: React.FC = () => {
                     </div>
                 )}
 
-                {/* Promo Card */}
                 {relatedAlbum && (
                     <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-xl relative overflow-hidden group flex flex-col sm:flex-row items-center gap-6">
                         <div className="relative z-10 flex-1 text-center sm:text-left">
@@ -246,14 +222,13 @@ export const TrackDetail: React.FC = () => {
                             </p>
                             
                             <Link 
-                                to={`/music-packs/${relatedAlbum.id}`}
+                                to={`/music-packs/${createSlug(relatedAlbum.id, relatedAlbum.title)}`}
                                 className="inline-flex items-center gap-2 bg-white text-indigo-700 font-bold px-6 py-3 rounded-full hover:bg-indigo-50 transition-colors shadow-sm"
                             >
                                 View Music Pack <ArrowRight size={16} />
                             </Link>
                         </div>
                         
-                        {/* Pack Cover Preview */}
                         <div className="relative z-10 flex-shrink-0">
                             <img 
                                 src={relatedAlbum.cover_url} 
@@ -261,14 +236,11 @@ export const TrackDetail: React.FC = () => {
                                 className="w-32 h-32 rounded-lg object-cover shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-500 border-2 border-white/20" 
                             />
                         </div>
-
-                        {/* Decorative background element */}
                         <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
                     </div>
                 )}
             </div>
 
-            {/* Sidebar (Details only now + Genres) */}
             <div className="space-y-6">
                 <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-zinc-900' : 'bg-gray-50'}`}>
                     <h3 className="text-lg font-bold mb-6">Track Details</h3>
@@ -280,14 +252,12 @@ export const TrackDetail: React.FC = () => {
                         <DetailRow label="ISRC" value={track.isrc} icon={<FileText size={16}/>} />
                         <DetailRow label="ISWC" value={track.iswc} icon={<FileText size={16}/>} />
                         
-                        {/* Credits Section */}
                         {track.credits && Array.isArray(track.credits) && track.credits.length > 0 && (
                             <div className="pt-4 mt-4 border-t border-gray-200 dark:border-zinc-700">
                                 <h4 className="font-bold mb-3 text-sm uppercase tracking-wider opacity-80">Credits</h4>
                                 <div className="space-y-2">
                                     {track.credits.map((credit: any, i: number) => (
                                         <div key={i} className="text-sm">
-                                            {/* Clickable Credit Name */}
                                             <Link 
                                                 to={`/library?search=${encodeURIComponent(credit.name)}`}
                                                 className="font-semibold opacity-90 hover:text-sky-500 hover:underline transition-colors"
@@ -302,7 +272,6 @@ export const TrackDetail: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Tags Section */}
                         {track.tags && Array.isArray(track.tags) && track.tags.length > 0 && (
                             <div className="pt-4 mt-4 border-t border-gray-200 dark:border-zinc-700">
                                 <h4 className="font-bold mb-3 text-sm uppercase tracking-wider opacity-80">Tags</h4>
@@ -320,7 +289,6 @@ export const TrackDetail: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Genres Section */}
                         {(Array.isArray(track.genre) ? track.genre : track.genre ? [track.genre] : []).length > 0 && (
                             <div className="pt-4 mt-4 border-t border-gray-200 dark:border-zinc-700">
                                 <h4 className="font-bold mb-3 text-sm uppercase tracking-wider opacity-80">Genres</h4>
@@ -342,7 +310,6 @@ export const TrackDetail: React.FC = () => {
             </div>
         </div>
 
-        {/* You Might Also Like Section */}
         {recommendations.length > 0 && (
             <div className="pt-12 border-t border-gray-200 dark:border-zinc-800">
                 <h3 className="text-2xl font-bold mb-8 flex items-center gap-2">
@@ -368,7 +335,7 @@ export const TrackDetail: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                <Link to={`/track/${rec.id}`} className="block font-bold truncate hover:text-sky-500 transition-colors">
+                                <Link to={`/track/${createSlug(rec.id, rec.title)}`} className="block font-bold truncate hover:text-sky-500 transition-colors">
                                     {rec.title}
                                 </Link>
                                 <div className="text-sm opacity-60 truncate">{rec.artist_name}</div>

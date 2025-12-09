@@ -5,8 +5,8 @@ import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Disc, ArrowRight, AlertCircle, Tag } from 'lucide-react';
 import { SEO } from '../components/SEO';
+import { createSlug } from '../utils/slugUtils';
 
-// Extend Album interface locally to include track count
 interface AlbumWithCount extends Album {
     track_count?: number;
 }
@@ -19,8 +19,6 @@ export const MusicPacks: React.FC = () => {
 
   useEffect(() => {
     const fetchAlbums = async () => {
-      // Sorting by ID to be safe
-      // We also fetch the count of tracks using Supabase count feature on foreign key relation
       const { data, error } = await supabase
         .from('album')
         .select('*, album_tracks(count)')
@@ -32,7 +30,6 @@ export const MusicPacks: React.FC = () => {
       }
       
       if (data) {
-        // Map the data to extract the count properly
         const mappedData = data.map((item: any) => ({
             ...item,
             track_count: item.album_tracks?.[0]?.count || 0
@@ -72,7 +69,6 @@ export const MusicPacks: React.FC = () => {
             </p>
          </div>
       ) : (
-        /* Grid Layout: 1 col mobile, 2 tablet, 3 small desktop, 4 large screens */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {albums.map(album => (
                 <div 
@@ -82,8 +78,7 @@ export const MusicPacks: React.FC = () => {
                         ${isDarkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-100 shadow-lg'}
                     `}
                 >
-                    {/* Square Cover Area */}
-                    <Link to={`/music-packs/${album.id}`} className="w-full aspect-square relative overflow-hidden bg-zinc-200 dark:bg-zinc-800 block">
+                    <Link to={`/music-packs/${createSlug(album.id, album.title)}`} className="w-full aspect-square relative overflow-hidden bg-zinc-200 dark:bg-zinc-800 block">
                         <img 
                             src={album.cover_url} 
                             alt={album.title} 
@@ -98,11 +93,10 @@ export const MusicPacks: React.FC = () => {
                         </div>
                     </Link>
 
-                    {/* Content Area */}
                     <div className="p-5 flex flex-col flex-1">
                         <div className="mb-4">
                             <h2 className="text-xl font-black mb-2 leading-tight group-hover:text-sky-500 transition-colors line-clamp-1">
-                                <Link to={`/music-packs/${album.id}`}>{album.title}</Link>
+                                <Link to={`/music-packs/${createSlug(album.id, album.title)}`}>{album.title}</Link>
                             </h2>
                             
                             {album.description && (
@@ -119,7 +113,7 @@ export const MusicPacks: React.FC = () => {
                             
                             <div className="flex gap-2">
                                 <Link 
-                                    to={`/music-packs/${album.id}`}
+                                    to={`/music-packs/${createSlug(album.id, album.title)}`}
                                     className={`p-2 rounded-full transition ${isDarkMode ? 'bg-zinc-800 hover:bg-zinc-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-black'}`}
                                     title="View Details"
                                 >
