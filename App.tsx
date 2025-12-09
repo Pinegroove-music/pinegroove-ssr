@@ -20,6 +20,7 @@ import { useStore } from './store/useStore';
 import { Menu, Search, Music, User, X } from 'lucide-react';
 import { supabase } from './services/supabase';
 import { createSlug } from './utils/slugUtils';
+import { SEO } from './components/SEO';
 
 const Layout: React.FC = () => {
   const { isDarkMode } = useStore();
@@ -186,6 +187,8 @@ const Layout: React.FC = () => {
       <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        {/* REMOVED GLOBAL SEO COMPONENT TO AVOID OVERRIDING SPECIFIC PAGES */}
         
         <header className={headerClasses}>
            <button 
