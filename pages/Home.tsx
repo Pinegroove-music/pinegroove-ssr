@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { MusicTrack, Client, Album, MediaTheme } from '../types';
 import { supabase } from '../services/supabase';
 import { useStore } from '../store/useStore';
-import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, ShieldCheck, Lock, Disc, Mail, Clapperboard } from 'lucide-react';
+import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, ShieldCheck, Lock, Disc, Mail, Clapperboard, Music, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 import { SEO } from '../components/SEO';
@@ -17,8 +17,14 @@ export const Home: React.FC = () => {
   const { isDarkMode, playTrack, currentTrack, isPlaying } = useStore();
   const navigate = useNavigate();
   
-  // Ref for Clients Carousel
+  // Suggestion State
+  const [suggestions, setSuggestions] = useState<{type: 'track' | 'artist', text: string}[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Refs
   const clientsScrollRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLFormElement>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const popularGenres = [
     'Cinematic', 'Corporate', 'Ambient', 'Rock', 'Pop', 'Electronic',
@@ -176,11 +182,85 @@ export const Home: React.FC = () => {
     return () => clearInterval(interval);
   }, [clients]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Click Outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+            setShowSuggestions(false);
+        }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch Suggestions Logic
+  useEffect(() => {
+      if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+      }
+
+      if (searchQuery.length < 2) {
+          setSuggestions([]);
+          setShowSuggestions(false);
+          return;
+      }
+
+      debounceTimeoutRef.current = setTimeout(async () => {
+          const query = searchQuery.trim();
+          
+          // Parallel fetch for Titles and Artists
+          const [titlesRes, artistsRes] = await Promise.all([
+             supabase.from('music_tracks').select('title').ilike('title', `%${query}%`).limit(4),
+             supabase.from('music_tracks').select('artist_name').ilike('artist_name', `%${query}%`).limit(2)
+          ]);
+
+          const newSuggestions: {type: 'track' | 'artist', text: string}[] = [];
+          const uniqueKeys = new Set<string>();
+
+          // Add Titles
+          if (titlesRes.data) {
+              titlesRes.data.forEach(t => {
+                  if (!uniqueKeys.has(t.title)) {
+                      uniqueKeys.add(t.title);
+                      newSuggestions.push({ type: 'track', text: t.title });
+                  }
+              });
+          }
+
+          // Add Artists
+          if (artistsRes.data) {
+              artistsRes.data.forEach(a => {
+                  if (!uniqueKeys.has(a.artist_name)) {
+                      uniqueKeys.add(a.artist_name);
+                      newSuggestions.push({ type: 'artist', text: a.artist_name });
+                  }
+              });
+          }
+
+          setSuggestions(newSuggestions);
+          setShowSuggestions(newSuggestions.length > 0);
+
+      }, 300); // 300ms delay
+
+      return () => {
+          if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+      };
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.FormEvent, overrideQuery?: string) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/library?search=${encodeURIComponent(searchQuery)}`);
+    const queryToUse = overrideQuery || searchQuery;
+    if (queryToUse.trim()) {
+      setShowSuggestions(false);
+      navigate(`/library?search=${encodeURIComponent(queryToUse)}`);
+      setSearchQuery(queryToUse);
     }
+  };
+
+  const handleSuggestionClick = (text: string) => {
+      setSearchQuery(text);
+      handleSearch({ preventDefault: () => {} } as React.FormEvent, text);
   };
 
   // Duplicate clients for infinite scroll loop (x6 to be safe)
@@ -211,15 +291,42 @@ export const Home: React.FC = () => {
                 High-quality stock music by composer Francesco Biondi.
             </p>
             
-            <form onSubmit={handleSearch} className="max-w-xl mx-auto relative text-zinc-900">
+            <form 
+                ref={searchContainerRef}
+                onSubmit={handleSearch} 
+                className="max-w-xl mx-auto relative text-zinc-900"
+            >
               <input 
                 type="text" 
                 placeholder="Search genre, mood, or instrument..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => { if(suggestions.length > 0) setShowSuggestions(true); }}
                 className="w-full p-4 pl-12 rounded-full shadow-2xl outline-none border border-transparent bg-white/95 focus:bg-white focus:ring-4 focus:ring-sky-500/30 transition-all backdrop-blur-sm"
               />
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 opacity-40 text-black" size={20} />
+              
+              {/* Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-xl bg-white text-left shadow-2xl overflow-hidden z-50 border border-gray-100">
+                    <ul>
+                        {suggestions.map((item, index) => (
+                            <li key={index}>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSuggestionClick(item.text)}
+                                    className="w-full text-left px-4 py-3 flex items-center gap-3 text-sm transition-colors hover:bg-sky-50 text-zinc-700 hover:text-sky-700"
+                                >
+                                    <span className="opacity-50 text-zinc-400">
+                                        {item.type === 'track' ? <Music size={14} /> : <User size={14} />}
+                                    </span>
+                                    <span className="font-medium truncate">{item.text}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+              )}
             </form>
             
             <div className="mt-4">
@@ -510,17 +617,22 @@ export const Home: React.FC = () => {
                 </div>
 
                 {/* Right Group (Duration + Cart) */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="text-sm font-mono opacity-60 text-right whitespace-nowrap">
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 flex-shrink-0 ml-auto">
+                    <div className="text-sm font-mono opacity-60 text-right whitespace-nowrap hidden sm:block">
                         {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
                     </div>
 
-                    <a 
-                    href={track.gumroad_link || '#'} 
-                    className={`p-2 rounded-full transition flex-shrink-0 ${isDarkMode ? 'bg-zinc-800 hover:bg-sky-600' : 'bg-gray-100 hover:bg-sky-500 hover:text-white'}`}
-                    >
-                    <ShoppingCart size={18} />
-                    </a>
+                    <div className="flex items-center gap-3">
+                         <div className="text-xs font-mono opacity-60 sm:hidden">
+                            {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
+                        </div>
+                        <a 
+                            href={track.gumroad_link || '#'} 
+                            className={`p-2 rounded-full transition flex-shrink-0 ${isDarkMode ? 'bg-zinc-800 hover:bg-sky-600' : 'bg-gray-100 hover:bg-sky-500 hover:text-white'}`}
+                        >
+                            <ShoppingCart size={18} />
+                        </a>
+                    </div>
                 </div>
               </div>
             );

@@ -116,6 +116,8 @@ export const Library: React.FC = () => {
 
         if (searchTerm) {
             const terms = searchTerm.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+            const fullTerm = searchTerm.toLowerCase().trim();
+
             filteredData = filteredData.filter(track => {
                 const trackString = [
                     track.title,
@@ -128,6 +130,30 @@ export const Library: React.FC = () => {
                     JSON.stringify(track.media_theme)
                 ].join(' ').toLowerCase();
                 return terms.some(t => trackString.includes(t));
+            });
+
+            // SORT BY RELEVANCE: Title Match Priority
+            filteredData.sort((a, b) => {
+                const titleA = a.title.toLowerCase();
+                const titleB = b.title.toLowerCase();
+
+                // 1. Exact Title Match (Highest Priority)
+                if (titleA === fullTerm && titleB !== fullTerm) return -1;
+                if (titleB === fullTerm && titleA !== fullTerm) return 1;
+
+                // 2. Title Starts With Search Term
+                const aStarts = titleA.startsWith(fullTerm);
+                const bStarts = titleB.startsWith(fullTerm);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+
+                // 3. Title Contains Search Term
+                const aContains = titleA.includes(fullTerm);
+                const bContains = titleB.includes(fullTerm);
+                if (aContains && !bContains) return -1;
+                if (!aContains && bContains) return 1;
+
+                return 0; // Maintain shuffled order for others
             });
         }
 
