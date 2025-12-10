@@ -12,7 +12,7 @@ export const Library: React.FC = () => {
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isDarkMode } = useStore();
+  const { isDarkMode, currentTrack } = useStore(); // Added currentTrack to check for player
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -247,6 +247,15 @@ export const Library: React.FC = () => {
       return "Music Library";
   };
 
+  // Calculate dynamic sidebar height to account for Player (5rem / 80px)
+  // Base height (viewport - header ~6rem) minus Player if active
+  const sidebarHeightClass = currentTrack 
+    ? 'lg:h-[calc(100vh-6rem-5rem)]' 
+    : 'lg:h-[calc(100vh-6rem)]';
+  
+  // Padding for mobile modal to avoid player overlap if open
+  const mobileContainerPadding = currentTrack ? 'pb-24' : 'pb-0';
+
   return (
     <div className="flex flex-col lg:flex-row lg:items-start relative">
       <SEO title={getPageTitle()} description={`Browse our library of ${tracks.length} high-quality royalty-free music tracks.`} />
@@ -259,110 +268,132 @@ export const Library: React.FC = () => {
       </button>
 
       <div className={`
-        lg:w-72 flex-shrink-0 p-6 border-r 
-        ${mobileFiltersOpen ? 'block' : 'hidden lg:block'}
-        ${isDarkMode ? 'border-zinc-800 bg-zinc-900/50' : 'border-zinc-100 bg-white'}
-        lg:sticky lg:top-0 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto no-scrollbar
+        lg:w-72 flex-shrink-0 border-r flex flex-col
+        ${mobileFiltersOpen ? `fixed inset-0 z-40 overflow-hidden ${mobileContainerPadding}` : 'hidden lg:flex'}
+        ${isDarkMode ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-100 bg-white'}
+        lg:sticky lg:top-0 ${sidebarHeightClass} transition-all duration-300
       `}>
         
-        <CollapsibleFilterSection 
-            title="Genres" 
-            items={genres} 
-            selected={selectedGenres} 
-            onChange={(i) => toggleFilter(selectedGenres, setSelectedGenres, i)} 
-            linkTo="/categories/genres"
-            isDark={isDarkMode}
-        />
-        
-        <CollapsibleFilterSection 
-            title="Moods" 
-            items={moods} 
-            selected={selectedMoods} 
-            onChange={(i) => toggleFilter(selectedMoods, setSelectedMoods, i)} 
-            linkTo="/categories/moods"
-            isDark={isDarkMode}
-        />
+        {/* Mobile Header (Only visible on mobile) */}
+        {mobileFiltersOpen && (
+            <div className={`flex items-center justify-between p-4 border-b ${isDarkMode ? 'border-zinc-800' : 'border-zinc-200'}`}>
+                <h3 className="font-bold text-lg">Filters</h3>
+                <button onClick={() => setMobileFiltersOpen(false)}>
+                    <X size={24} />
+                </button>
+            </div>
+        )}
 
-        {availableInstruments.length > 0 && (
+        {/* Scrollable Area for Filters */}
+        <div className="flex-1 overflow-y-auto no-scrollbar p-6">
             <CollapsibleFilterSection 
-                title="Instruments" 
-                items={availableInstruments} 
-                selected={selectedInstruments} 
-                onChange={(i) => toggleFilter(selectedInstruments, setSelectedInstruments, i)} 
-                linkTo="/categories/instruments"
+                title="Genres" 
+                items={genres} 
+                selected={selectedGenres} 
+                onChange={(i) => toggleFilter(selectedGenres, setSelectedGenres, i)} 
+                linkTo="/categories/genres"
                 isDark={isDarkMode}
             />
-        )}
-        
-        <CollapsibleFilterSection 
-            title="Tempo" 
-            isDark={isDarkMode}
-        >
-             <div className="space-y-1 pb-4">
-                {['slow', 'medium', 'fast'].map(range => (
-                    <button 
-                        key={range} 
-                        onClick={() => setBpmRange(bpmRange === range ? null : range as any)}
-                        className={`
-                            flex items-center justify-between w-full text-left px-4 py-2.5 rounded-full text-sm font-medium transition-all mb-1
-                            ${bpmRange === range 
-                                ? 'bg-sky-500 text-white shadow-md transform scale-105' 
-                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
-                        `}
-                    >
-                        <span className="capitalize">{range}</span>
-                        {bpmRange === range && <Check size={14} className="text-white"/>}
-                    </button>
-                ))}
-            </div>
-        </CollapsibleFilterSection>
+            
+            <CollapsibleFilterSection 
+                title="Moods" 
+                items={moods} 
+                selected={selectedMoods} 
+                onChange={(i) => toggleFilter(selectedMoods, setSelectedMoods, i)} 
+                linkTo="/categories/moods"
+                isDark={isDarkMode}
+            />
 
-        <CollapsibleFilterSection 
-            title="Seasonal Themes" 
-            items={seasons} 
-            selected={selectedSeasons} 
-            onChange={(i) => toggleFilter(selectedSeasons, setSelectedSeasons, i)} 
-            linkTo="/categories/seasonal"
-            isDark={isDarkMode}
-        />
-
-        {hasActiveFilters && (
-            <div className={`mt-8 p-4 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${isDarkMode ? 'border-zinc-800 bg-black/20' : 'border-zinc-200 bg-zinc-50'}`}>
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-dashed border-gray-300 dark:border-zinc-700">
-                    <h4 className="font-bold text-sm text-sky-600 dark:text-sky-400">ACTIVE FILTERS</h4>
-                    <button 
-                        onClick={clearAllFilters}
-                        className="text-xs bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 px-2 py-1 rounded transition-colors flex items-center gap-1 font-bold"
-                    >
-                        <Trash2 size={12} /> Clear All
-                    </button>
+            {availableInstruments.length > 0 && (
+                <CollapsibleFilterSection 
+                    title="Instruments" 
+                    items={availableInstruments} 
+                    selected={selectedInstruments} 
+                    onChange={(i) => toggleFilter(selectedInstruments, setSelectedInstruments, i)} 
+                    linkTo="/categories/instruments"
+                    isDark={isDarkMode}
+                />
+            )}
+            
+            <CollapsibleFilterSection 
+                title="Tempo" 
+                isDark={isDarkMode}
+            >
+                <div className="space-y-1 pb-4">
+                    {['slow', 'medium', 'fast'].map(range => (
+                        <button 
+                            key={range} 
+                            onClick={() => setBpmRange(bpmRange === range ? null : range as any)}
+                            className={`
+                                flex items-center justify-between w-full text-left px-4 py-2.5 rounded-full text-sm font-medium transition-all mb-1
+                                ${bpmRange === range 
+                                    ? 'bg-sky-500 text-white shadow-md transform scale-105' 
+                                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
+                            `}
+                        >
+                            <span className="capitalize">{range}</span>
+                            {bpmRange === range && <Check size={14} className="text-white"/>}
+                        </button>
+                    ))}
                 </div>
-                
-                <div className="flex flex-wrap gap-2">
-                    {searchTerm && (
-                        <ActiveFilterBadge label={`"${searchTerm}"`} onRemove={() => { setSearchTerm(''); setSearchParams({}); }} isDark={isDarkMode} />
-                    )}
-                    {bpmRange && (
-                        <ActiveFilterBadge label={`BPM: ${bpmRange}`} onRemove={() => setBpmRange(null)} isDark={isDarkMode} />
-                    )}
-                    {selectedGenres.map(g => (
-                        <ActiveFilterBadge key={g} label={g} onRemove={() => toggleFilter(selectedGenres, setSelectedGenres, g)} isDark={isDarkMode} />
-                    ))}
-                    {selectedMoods.map(m => (
-                        <ActiveFilterBadge key={m} label={m} onRemove={() => toggleFilter(selectedMoods, setSelectedMoods, m)} isDark={isDarkMode} />
-                    ))}
-                    {selectedInstruments.map(i => (
-                        <ActiveFilterBadge key={i} label={i} onRemove={() => toggleFilter(selectedInstruments, setSelectedInstruments, i)} isDark={isDarkMode} />
-                    ))}
-                    {selectedSeasons.map(s => (
-                        <ActiveFilterBadge key={s} label={s} onRemove={() => toggleFilter(selectedSeasons, setSelectedSeasons, s)} isDark={isDarkMode} />
-                    ))}
+            </CollapsibleFilterSection>
+
+            <CollapsibleFilterSection 
+                title="Seasonal Themes" 
+                items={seasons} 
+                selected={selectedSeasons} 
+                onChange={(i) => toggleFilter(selectedSeasons, setSelectedSeasons, i)} 
+                linkTo="/categories/seasonal"
+                isDark={isDarkMode}
+            />
+        </div>
+
+        {/* Floating Active Filters Card - Styled as a detached card */}
+        {hasActiveFilters && (
+            <div className="p-4 z-10">
+                <div className={`
+                    p-3 rounded-xl border animate-in slide-in-from-bottom-2 duration-300
+                    shadow-xl
+                    ${isDarkMode ? 'bg-zinc-800 border-zinc-700 shadow-black/50' : 'bg-white border-sky-100 shadow-sky-100'}
+                `}>
+                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-xs text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles size={12}/> ACTIVE FILTERS
+                        </h4>
+                        <button 
+                            onClick={clearAllFilters}
+                            className="text-xs bg-red-100 hover:bg-red-200 text-red-600 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 px-2 py-1 rounded transition-colors flex items-center gap-1 font-bold"
+                        >
+                            <Trash2 size={12} /> Clear All
+                        </button>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto no-scrollbar">
+                        {searchTerm && (
+                            <ActiveFilterBadge label={`"${searchTerm}"`} onRemove={() => { setSearchTerm(''); setSearchParams({}); }} isDark={isDarkMode} />
+                        )}
+                        {bpmRange && (
+                            <ActiveFilterBadge label={`BPM: ${bpmRange}`} onRemove={() => setBpmRange(null)} isDark={isDarkMode} />
+                        )}
+                        {selectedGenres.map(g => (
+                            <ActiveFilterBadge key={g} label={g} onRemove={() => toggleFilter(selectedGenres, setSelectedGenres, g)} isDark={isDarkMode} />
+                        ))}
+                        {selectedMoods.map(m => (
+                            <ActiveFilterBadge key={m} label={m} onRemove={() => toggleFilter(selectedMoods, setSelectedMoods, m)} isDark={isDarkMode} />
+                        ))}
+                        {selectedInstruments.map(i => (
+                            <ActiveFilterBadge key={i} label={i} onRemove={() => toggleFilter(selectedInstruments, setSelectedInstruments, i)} isDark={isDarkMode} />
+                        ))}
+                        {selectedSeasons.map(s => (
+                            <ActiveFilterBadge key={s} label={s} onRemove={() => toggleFilter(selectedSeasons, setSelectedSeasons, s)} isDark={isDarkMode} />
+                        ))}
+                    </div>
                 </div>
             </div>
         )}
       </div>
 
-      <div className="flex-1 p-4 lg:p-8">
+      <div className="flex-1 p-4 lg:p-8 pb-32">
         <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
                  <h2 className="text-3xl font-bold">Library</h2>
