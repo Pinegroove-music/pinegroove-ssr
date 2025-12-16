@@ -142,7 +142,7 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
                     </div>
 
                     <p className="text-xs text-white/90 mb-3 leading-relaxed relative z-10 font-medium">
-                        Get <span className="font-bold text-white text-sm">50% OFF</span> all licenses until <span className="underline decoration-white/30 underline-offset-2">Jan 4, 2026</span>. use code:
+                        Get <span className="font-bold text-white text-sm">50% OFF</span> all licenses until <span className="underline decoration-white/30 underline-offset-2">Jan 4, 2026</span>. Use code:
                     </p>
 
                     <button
