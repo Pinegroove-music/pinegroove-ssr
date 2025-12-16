@@ -393,7 +393,7 @@ export const Library: React.FC = () => {
         )}
       </div>
 
-      <div className="flex-1 p-4 lg:p-8 pb-32">
+      <div className="flex-1 p-4 lg:p-8">
         <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
                  <h2 className="text-3xl font-bold">Library</h2>
@@ -441,7 +441,7 @@ export const Library: React.FC = () => {
             )}
 
             {totalPages > 1 && (
-                <div className="mt-12 pb-40 flex justify-center items-center gap-2">
+                <div className="mt-12 flex justify-center items-center gap-2">
                     <button 
                         onClick={() => paginate(currentPage - 1)}
                         disabled={currentPage === 1}
@@ -483,6 +483,10 @@ export const Library: React.FC = () => {
             )}
           </>
         )}
+        
+        {/* Dedicated Spacer for Player Overlap */}
+        <div className={`w-full transition-all duration-300 pointer-events-none ${currentTrack ? 'h-48' : 'h-24'}`} />
+
       </div>
     </div>
   );
