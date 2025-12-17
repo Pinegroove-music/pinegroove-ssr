@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { MusicTrack, Client, Album, MediaTheme } from '../types';
 import { supabase } from '../services/supabase';
 import { useStore } from '../store/useStore';
-import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, ShieldCheck, Lock, Disc, Mail, Clapperboard, Music, User } from 'lucide-react';
+import { Search, Play, ShoppingCart, Pause, ArrowRight, Sparkles, FileCheck, ShieldCheck, Lock, Disc, Mail, Clapperboard, Music, User, TicketPercent, Copy, Check } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { WaveformVisualizer } from '../components/WaveformVisualizer';
 import { SEO } from '../components/SEO';
@@ -13,6 +13,7 @@ export const Home: React.FC = () => {
   const [trendingTracks, setTrendingTracks] = useState<MusicTrack[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [featuredPack, setFeaturedPack] = useState<Album | null>(null);
+  const [featuredTrack, setFeaturedTrack] = useState<MusicTrack | null>(null);
   const [mediaThemes, setMediaThemes] = useState<MediaTheme[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const { isDarkMode, playTrack, currentTrack, isPlaying } = useStore();
@@ -20,6 +21,7 @@ export const Home: React.FC = () => {
   
   const [suggestions, setSuggestions] = useState<{type: 'track' | 'artist', text: string, id?: number}[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const clientsScrollRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLFormElement>(null);
@@ -108,6 +110,25 @@ export const Home: React.FC = () => {
       if (packs && packs.length > 0) {
         const randomPack = packs[Math.floor(Math.random() * packs.length)];
         setFeaturedPack(randomPack);
+
+        // Fetch the first track of this pack to allow playback
+        const { data: trackLink } = await supabase
+            .from('album_tracks')
+            .select('track_id')
+            .eq('album_id', randomPack.id)
+            .order('track_order', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+        if (trackLink) {
+            const { data: fullTrack } = await supabase
+                .from('music_tracks')
+                .select('*')
+                .eq('id', trackLink.track_id)
+                .single();
+            
+            if (fullTrack) setFeaturedTrack(fullTrack);
+        }
       }
 
       const { data: themes } = await supabase.from('media_theme').select('*');
@@ -224,13 +245,20 @@ export const Home: React.FC = () => {
       }
   };
 
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText('LATL4Z9');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const displayClients = clients.length > 0 ? [...clients, ...clients, ...clients, ...clients, ...clients, ...clients] : [];
 
   return (
     <div className="space-y-16 pb-20">
       <SEO title="Royalty Free Music for Video" />
       
-      <div className="relative py-28 px-4 text-center overflow-hidden">
+      {/* HERO SECTION */}
+      <div className="relative pt-28 text-center overflow-hidden flex flex-col">
          <div className="absolute inset-0 z-0">
             <img 
                 src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=2070&auto=format&fit=crop" 
@@ -240,7 +268,7 @@ export const Home: React.FC = () => {
             <div className="absolute inset-0 bg-black/60 transition-colors duration-500"></div>
          </div>
 
-         <div className="relative z-10 w-full max-w-[1920px] mx-auto px-6 text-white">
+         <div className="relative z-10 w-full max-w-[1920px] mx-auto px-6 text-white mb-12 md:mb-16">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight drop-shadow-md leading-tight">
                 Find the perfect sound for your story.
             </h1>
@@ -285,7 +313,7 @@ export const Home: React.FC = () => {
               )}
             </form>
             
-            <div className="mt-4">
+            <div className="mt-8">
                 <Link 
                     to="/library" 
                     className="inline-flex items-center gap-2 text-sky-200 hover:text-white transition-colors font-medium text-sm group"
@@ -293,6 +321,28 @@ export const Home: React.FC = () => {
                     Explore Full Catalog 
                     <ArrowRight size={16} className="transform group-hover:translate-x-1 transition-transform"/>
                 </Link>
+            </div>
+         </div>
+
+         {/* FULL WIDTH PROMO BANNER - FLOW LAYOUT */}
+         <div className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white py-3 px-4 shadow-md z-20 border-t border-white/20 relative">
+            <div className="max-w-[1920px] mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 md:gap-4 text-sm md:text-base text-center sm:text-left">
+                <div className="flex items-center gap-2 font-medium">
+                    <TicketPercent size={18} className="animate-bounce" />
+                    <span>Christmas Sale: Get <span className="font-bold text-red-50 bg-white/10 px-1 rounded">50% OFF</span> all licenses until Jan 4, 2026.</span>
+                </div>
+                
+                <button 
+                    onClick={handleCopyCode}
+                    className="flex items-center gap-2 bg-black/20 hover:bg-black/40 rounded-full pl-3 pr-2 py-1 transition-all group active:scale-95 border border-white/20"
+                    title="Click to copy code"
+                >
+                    <span className="opacity-80 text-xs uppercase tracking-wide">Use code:</span>
+                    <span className="font-mono font-bold tracking-wider text-yellow-300 group-hover:text-white transition-colors">LATL4Z9</span>
+                    <div className={`p-1 rounded-full ${copied ? 'bg-white text-red-600' : 'bg-white/10 text-white group-hover:bg-white/20'}`}>
+                        {copied ? <Check size={12} /> : <Copy size={12} />}
+                    </div>
+                </button>
             </div>
          </div>
       </div>
@@ -442,11 +492,29 @@ export const Home: React.FC = () => {
                 </div>
 
                 <div className="relative z-10 p-8 md:p-14 flex flex-col md:flex-row items-center gap-10 md:gap-16">
-                    <img 
-                        src={featuredPack.cover_url} 
-                        alt={featuredPack.title} 
-                        className="w-64 h-64 md:w-80 md:h-80 object-cover rounded-xl shadow-2xl rotate-3 group-hover:rotate-0 transition-all duration-500 border border-white/10"
-                    />
+                    {/* Featured Pack Cover with Play Button */}
+                    <div 
+                        className="relative w-64 h-64 md:w-80 md:h-80 rounded-xl shadow-2xl rotate-3 group-hover:rotate-0 transition-all duration-500 border border-white/10 overflow-hidden group/cover cursor-pointer"
+                        onClick={() => featuredTrack && playTrack(featuredTrack)}
+                    >
+                        <img 
+                            src={featuredPack.cover_url} 
+                            alt={featuredPack.title} 
+                            className="w-full h-full object-cover"
+                        />
+                         {/* Play Button Overlay */}
+                         {featuredTrack && (
+                            <div className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-300 ${currentTrack?.id === featuredTrack.id && isPlaying ? 'opacity-100' : 'opacity-0 group-hover/cover:opacity-100'}`}>
+                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/50 shadow-lg transition-transform transform hover:scale-110">
+                                    {currentTrack?.id === featuredTrack.id && isPlaying ? (
+                                        <Pause size={32} className="text-white fill-white" />
+                                    ) : (
+                                        <Play size={32} className="text-white fill-white ml-1" />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     <div className="text-center md:text-left text-white flex-1">
                         <div className="inline-block px-3 py-1 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-xs font-bold uppercase tracking-widest mb-4">

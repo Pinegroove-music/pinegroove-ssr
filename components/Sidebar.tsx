@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Library, Info, HelpCircle, ShieldAlert, Music, X, Sun, Moon, ChevronLeft, ChevronRight, TicketPercent, Copy, Check } from 'lucide-react';
+import { Home, Library, Info, HelpCircle, ShieldAlert, Music, X, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: boolean) => void }> = ({ mobileOpen, setMobileOpen }) => {
   const { isDarkMode, toggleTheme } = useStore();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const navItems = [
     { label: 'Home', path: '/', icon: Home },
@@ -48,12 +47,6 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
     } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText('LATL4Z9');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -125,43 +118,6 @@ export const Sidebar: React.FC<{ mobileOpen: boolean; setMobileOpen: (open: bool
             );
           })}
         </nav>
-
-        {/* PROMO CODE CARD */}
-        {!collapsed && (
-            <div className="px-3 pb-4">
-                <div className="p-4 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 text-white shadow-lg relative overflow-hidden group border border-white/10 transition-all duration-300 hover:shadow-red-600/40 hover:-translate-y-1">
-                    {/* Decorative Blur with Animation */}
-                    <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/20 rounded-full blur-2xl pointer-events-none transition-all duration-700 group-hover:scale-[2.5] group-hover:bg-white/10"></div>
-                    
-                    {/* Subtle shine on hover */}
-                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-
-                    <div className="flex items-center gap-2 mb-1 relative z-10">
-                        <TicketPercent size={18} className="text-white group-hover:rotate-12 transition-transform duration-300" />
-                        <span className="font-bold text-xs tracking-wider uppercase text-red-100">Limited Offer</span>
-                    </div>
-
-                    <p className="text-xs text-white/90 mb-3 leading-relaxed relative z-10 font-medium">
-                        Get <span className="font-bold text-white text-sm">50% OFF</span> all licenses until <span className="underline decoration-white/30 underline-offset-2">Jan 4, 2026</span>. Use code:
-                    </p>
-
-                    <button
-                        onClick={handleCopyCode}
-                        className="w-full relative z-10 bg-black/20 hover:bg-black/30 border border-white/20 rounded-lg p-2 flex items-center justify-between transition-all active:scale-95 group/btn"
-                        title="Click to copy code"
-                    >
-                        <span className="font-mono font-bold tracking-wider ml-1 text-sm group-hover/btn:text-white transition-colors">LATL4Z9</span>
-                        <div className="flex items-center gap-1">
-                            {copied ? (
-                                <span className="text-[10px] font-bold bg-white text-red-600 px-1.5 py-0.5 rounded animate-in fade-in zoom-in">Copied!</span>
-                            ) : (
-                                <Copy size={16} className="text-white/80 group-hover/btn:text-white transition-transform group-hover/btn:scale-110" />
-                            )}
-                        </div>
-                    </button>
-                </div>
-            </div>
-        )}
 
         {/* Theme Toggle Button - Now at the bottom */}
         <div className={`p-4 border-t ${isDarkMode ? 'border-zinc-900' : 'border-zinc-300'}`}>
